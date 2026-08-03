@@ -1,0 +1,232 @@
+"""
+Yakalama paketlerini analiz eden modül.
+
+Bu modül parola denemesi yapmaz.
+Yalnızca yakalama dosyasındaki 802.11 paketlerini sınıflandırır.
+"""
+
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from typing import Any, Iterable
+
+from src.utils import decode_ssid, first_value, is_valid_mac, normalize_mac
+
+
+FRAME_SUBTYPE_NAMES = {
+    "0": "Association Request",
+    "1": "Association Response",
+    "2": "Reassociation Request",
+    "3": "Reassociation Response",
+    "4": "Probe Request",
+    "5": "Probe Response",
+    "8": "Beacon",
+    "10": "Disassociation",
+    "11": "Authentication",
+    "12": "Deauthentication",
+}
+
+
+def is_ignored_mac(mac_address: str) -> bool:
+    """Broadcast ve multicast adreslerini filtreler."""
+
+    if not mac_address:
+        return True
+
+    if mac_address == "ff:ff:ff:ff:ff:ff":
+        return True
+
+    if mac_address.startswith("01:00:5e"):
+        return True
+
+    if mac_address.startswith("33:33"):
+        return True
+
+    return False
+
+
+def safe_signal(value: str) -> int | None:
+    """Sinyal değerini mümkünse tam sayıya dönüştürür."""
+
+    value = first_value(value)
+
+    if not value:
+        return None
+
+    try:
+        return int(float(value))
+    except ValueError:
+        return None
+
+
+def analyze_packets(
+    packets: Iterable[dict[str, str]],
+) -> dict[str, Any]:
+    """Paket akışını okuyup özet rapor oluşturur."""
+
+    total_packets = 0
+    eapol_packets = 0
+
+    ssids_by_bssid: dict[str, set[str]] = defaultdict(set)
+    channels_by_bssid: dict[str, Counter[str]] = defaultdict(Counter)
+    signals_by_bssid: dict[str, list[int]] = defaultdict(list)
+    clients_by_bssid: dict[str, Counter[str]] = defaultdict(Counter)
+
+    source_counts: Counter[str] = Counter()
+    destination_counts: Counter[str] = Counter()
+    subtype_counts: Counter[str] = Counter()
+
+    eapol_details: list[dict[str, str]] = []
+
+    for packet in packets:
+        total_packets += 1
+
+        frame_number = first_value(packet.get("frame_number", ""))
+        timestamp = first_value(packet.get("timestamp", ""))
+        frame_subtype = first_value(packet.get("frame_subtype", ""))
+
+        source = normalize_mac(
+            first_value(packet.get("source", ""))
+        )
+        destination = normalize_mac(
+            first_value(packet.get("destination", ""))
+        )
+        bssid = normalize_mac(
+            first_value(packet.get("bssid", ""))
+        )
+
+        ssid_raw = first_value(packet.get("ssid", ""))
+        channel = first_value(packet.get("channel", ""))
+        signal = safe_signal(packet.get("signal", ""))
+        eapol_type = first_value(packet.get("eapol_type", ""))
+
+        if source and is_valid_mac(source):
+            source_counts[source] += 1
+
+        if destination and is_valid_mac(destination):
+            destination_counts[destination] += 1
+
+        if frame_subtype:
+            subtype_name = FRAME_SUBTYPE_NAMES.get(
+                frame_subtype,
+                f"Subtype {frame_subtype}",
+            )
+            subtype_counts[subtype_name] += 1
+
+        if bssid and is_valid_mac(bssid):
+            if ssid_raw:
+                ssids_by_bssid[bssid].add(
+                    decode_ssid(ssid_raw)
+                )
+
+            if channel:
+                channels_by_bssid[bssid][channel] += 1
+
+            if signal is not None:
+                signals_by_bssid[bssid].append(signal)
+
+            for mac_address in (source, destination):
+                if not is_valid_mac(mac_address):
+                    continue
+
+                if mac_address == bssid:
+                    continue
+
+                if is_ignored_mac(mac_address):
+                    continue
+
+                clients_by_bssid[bssid][mac_address] += 1
+
+        if eapol_type:
+            eapol_packets += 1
+
+            eapol_details.append(
+                {
+                    "frame_number": frame_number,
+                    "timestamp": timestamp,
+                    "source": source,
+                    "destination": destination,
+                    "bssid": bssid,
+                    "eapol_type": eapol_type,
+                }
+            )
+
+    bssids = (
+        set(ssids_by_bssid)
+        | set(channels_by_bssid)
+        | set(signals_by_bssid)
+        | set(clients_by_bssid)
+    )
+
+    networks: list[dict[str, Any]] = []
+
+    for bssid in sorted(bssids):
+        channels = channels_by_bssid.get(
+            bssid,
+            Counter(),
+        )
+        signals = signals_by_bssid.get(
+            bssid,
+            [],
+        )
+        clients = clients_by_bssid.get(
+            bssid,
+            Counter(),
+        )
+
+        primary_channel = (
+            channels.most_common(1)[0][0]
+            if channels
+            else None
+        )
+
+        average_signal = (
+            round(sum(signals) / len(signals), 2)
+            if signals
+            else None
+        )
+
+        networks.append(
+            {
+                "bssid": bssid,
+                "ssids": sorted(
+                    ssids_by_bssid.get(bssid, [])
+                ),
+                "channel": primary_channel,
+                "average_signal_dbm": average_signal,
+                "clients": [
+                    {
+                        "mac": mac,
+                        "packet_count": packet_count,
+                    }
+                    for mac, packet_count
+                    in clients.most_common()
+                ],
+            }
+        )
+
+    return {
+        "total_packets": total_packets,
+        "network_count": len(networks),
+        "eapol_packet_count": eapol_packets,
+        "networks": networks,
+        "frame_subtypes": dict(
+            subtype_counts.most_common()
+        ),
+        "top_sources": [
+            {
+                "mac": mac,
+                "packet_count": count,
+            }
+            for mac, count in source_counts.most_common(20)
+        ],
+        "top_destinations": [
+            {
+                "mac": mac,
+                "packet_count": count,
+            }
+            for mac, count
+            in destination_counts.most_common(20)
+        ],
+        "eapol_packets": eapol_details,
+    }
