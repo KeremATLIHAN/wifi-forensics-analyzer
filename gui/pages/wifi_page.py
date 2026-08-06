@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
@@ -40,6 +40,7 @@ class WifiPage(QWidget):
             "Analiz için bir yakalama dosyası seçin."
         )
         self.network_table = QTableWidget()
+        self.detail_values: dict[str, QLabel] = {}
 
         self._build_ui()
         self._connect_signals()
@@ -65,7 +66,15 @@ class WifiPage(QWidget):
         layout.addWidget(description)
         layout.addWidget(self._create_capture_panel())
         layout.addWidget(self._create_summary_panel())
-        layout.addWidget(self._create_networks_panel(), 1)
+
+        results_layout = QHBoxLayout()
+        results_layout.setSpacing(12)
+
+        results_layout.addWidget(self._create_networks_panel(), 3)
+        results_layout.addWidget(self._create_network_details_panel(), 2)
+
+        layout.addLayout(results_layout, 1)
+        
 
         self.status_label.setObjectName("moduleStatus")
         layout.addWidget(self.status_label)
@@ -243,3 +252,97 @@ class WifiPage(QWidget):
         )
 
         self.analysis_requested.emit(self.selected_capture)
+
+
+    def _create_network_details_panel(self) -> QFrame:
+        """Seçilen ağın ayrıntı panelini oluşturur."""
+
+        panel = QFrame()
+        panel.setObjectName("contentCard")
+        panel.setMinimumWidth(300)
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(10)
+
+        heading = QLabel("Ağ Detayları")
+        heading.setObjectName("sectionTitle")
+        layout.addWidget(heading)
+
+        fields = (
+            ("ssid", "SSID"),
+            ("bssid", "BSSID"),
+            ("channel", "Kanal"),
+            ("signal", "Sinyal"),
+            ("clients", "İstemciler"),
+            ("eapol", "EAPOL"),
+            ("handshake", "Handshake"),
+        )
+
+        for key, title in fields:
+            row = QHBoxLayout()
+
+            title_label = QLabel(f"{title}:")
+            title_label.setStyleSheet(
+                "color: #94A3B8; font-weight: 600;"
+            )
+
+            value_label = QLabel("—")
+            value_label.setWordWrap(True)
+            value_label.setTextInteractionFlags(
+                value_label.textInteractionFlags()
+                | Qt.TextInteractionFlag.TextSelectableByMouse
+            )
+
+            row.addWidget(title_label)
+            row.addStretch(1)
+            row.addWidget(value_label)
+
+            self.detail_values[key] = value_label
+            layout.addLayout(row)
+
+        layout.addStretch(1)
+
+        return panel
+
+
+    def show_network_details(
+        self,
+        network: dict,
+        eapol_count: int,
+    ) -> None:
+        """Seçilen ağın bilgilerini detay panelinde gösterir."""
+
+        ssids = network.get("ssids", [])
+        clients = network.get("clients", [])
+        signal = network.get("average_signal_dbm")
+        channel = network.get("channel")
+
+        self.detail_values["ssid"].setText(
+            ", ".join(ssids) if ssids else "<Gizli SSID>"
+        )
+        self.detail_values["bssid"].setText(
+            str(network.get("bssid", "—"))
+        )
+        self.detail_values["channel"].setText(
+            str(channel if channel is not None else "—")
+        )
+        self.detail_values["signal"].setText(
+            f"{signal} dBm" if signal is not None else "—"
+        )
+        self.detail_values["clients"].setText(
+            str(len(clients))
+        )
+        self.detail_values["eapol"].setText(
+            str(eapol_count)
+        )
+        self.detail_values["handshake"].setText(
+            "Bulundu" if eapol_count >= 4 else "Bulunamadı"
+        )
+
+
+    def clear_network_details(self) -> None:
+        """Detay panelini temizler."""
+
+        for label in self.detail_values.values():
+            label.setText("—")

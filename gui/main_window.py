@@ -43,6 +43,8 @@ class MainWindow(QMainWindow):
 
         self.thread_pool = QThreadPool.globalInstance()
         self.active_worker: AnalysisWorker | None = None
+        self.last_networks: list[dict[str, Any]] = []
+        self.last_eapol_count = 0
 
         self._build_ui()
         self._connect_page_signals()
@@ -76,6 +78,9 @@ class MainWindow(QMainWindow):
         )
         self.wifi_page.analysis_requested.connect(
             self._on_analysis_requested
+        )
+        self.wifi_page.network_table.itemSelectionChanged.connect(
+             self._on_network_selected
         )
 
     def _create_sidebar(self) -> QFrame:
@@ -216,6 +221,9 @@ class MainWindow(QMainWindow):
         self.wifi_page.analyze_button.setEnabled(False)
         self.wifi_page.progress_bar.setValue(0)
         self.wifi_page.network_table.setRowCount(0)
+        self.last_networks = []
+        self.last_eapol_count = 0
+        self.wifi_page.clear_network_details()
 
         self.statusBar().showMessage(
             f"Analiz başlatıldı: {capture_file.name}"
@@ -243,6 +251,10 @@ class MainWindow(QMainWindow):
         """Analiz sonuçlarını kartlara ve tabloya aktarır."""
 
         networks = report.get("networks", [])
+        self.last_networks = networks
+        self.last_eapol_count = int(
+            report.get("eapol_packet_count", 0)
+        )
 
         client_macs = {
             client.get("mac")
@@ -317,4 +329,22 @@ class MainWindow(QMainWindow):
         self.wifi_page.browse_button.setEnabled(True)
         self.wifi_page.analyze_button.setEnabled(
             self.wifi_page.selected_capture is not None
+        )
+
+    def _on_network_selected(self) -> None:
+        """Tabloda seçilen ağın ayrıntılarını gösterir."""
+
+        selected_row = (
+            self.wifi_page.network_table.currentRow()
+        )
+
+        if not 0 <= selected_row < len(self.last_networks):
+            self.wifi_page.clear_network_details()
+            return
+
+        network = self.last_networks[selected_row]
+
+        self.wifi_page.show_network_details(
+            network,
+            self.last_eapol_count,
         )
