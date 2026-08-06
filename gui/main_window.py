@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
+from PySide6.QtCore import QThreadPool
+from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
+
+from gui.worker import AnalysisWorker
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
@@ -13,6 +20,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from gui.pages.dashboard_page import DashboardPage
+from gui.pages.wifi_page import WifiPage
 
 
 class MainWindow(QMainWindow):
@@ -28,25 +38,45 @@ class MainWindow(QMainWindow):
         self.navigation_buttons: list[QPushButton] = []
         self.stack = QStackedWidget()
 
+        self.dashboard_page = DashboardPage()
+        self.wifi_page = WifiPage()
+
+        self.thread_pool = QThreadPool.globalInstance()
+        self.active_worker: AnalysisWorker | None = None
+
+        self._build_ui()
+        self._connect_page_signals()
+        self._select_page(0)
+
+    def _build_ui(self) -> None:
+        """Ana pencere yerleşimini oluşturur."""
+
         central_widget = QWidget()
         root_layout = QHBoxLayout(central_widget)
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        sidebar = self._create_sidebar()
-        dashboard_page = self._create_dashboard_page()
-        wifi_page = self._create_wifi_page()
+        root_layout.addWidget(self._create_sidebar())
 
-        self.stack.addWidget(dashboard_page)
-        self.stack.addWidget(wifi_page)
+        self.stack.addWidget(self.dashboard_page)
+        self.stack.addWidget(self.wifi_page)
 
-        root_layout.addWidget(sidebar)
         root_layout.addWidget(self.stack, 1)
 
         self.setCentralWidget(central_widget)
-        self.statusBar().showMessage("CyberLab Desktop Suite hazır.")
+        self.statusBar().showMessage(
+            "CyberLab Desktop Suite hazır."
+        )
 
-        self._select_page(0)
+    def _connect_page_signals(self) -> None:
+        """Sayfalardan gelen olayları ana pencereye bağlar."""
+
+        self.wifi_page.capture_selected.connect(
+            self._on_capture_selected
+        )
+        self.wifi_page.analysis_requested.connect(
+            self._on_analysis_requested
+        )
 
     def _create_sidebar(self) -> QFrame:
         """Sol navigasyon panelini oluşturur."""
@@ -69,17 +99,19 @@ class MainWindow(QMainWindow):
         layout.addWidget(brand_subtitle)
         layout.addSpacing(25)
 
-        dashboard_button = self._create_navigation_button(
-            "Dashboard",
-            0,
+        layout.addWidget(
+            self._create_navigation_button(
+                "Dashboard",
+                0,
+            )
         )
-        wifi_button = self._create_navigation_button(
-            "Wi-Fi Forensics",
-            1,
+        layout.addWidget(
+            self._create_navigation_button(
+                "Wi-Fi Forensics",
+                1,
+            )
         )
 
-        layout.addWidget(dashboard_button)
-        layout.addWidget(wifi_button)
         layout.addStretch(1)
 
         version_label = QLabel("Desktop Suite · v0.2-dev")
@@ -97,7 +129,7 @@ class MainWindow(QMainWindow):
         text: str,
         page_index: int,
     ) -> QPushButton:
-        """Sol menü için navigasyon düğmesi oluşturur."""
+        """Sol menü için bir navigasyon düğmesi oluşturur."""
 
         button = QPushButton(text)
         button.setObjectName("navigationButton")
@@ -113,102 +145,17 @@ class MainWindow(QMainWindow):
 
         return button
 
-    def _create_dashboard_page(self) -> QWidget:
-        """İlk dashboard sayfasını oluşturur."""
-
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(16)
-
-        title = QLabel("Dashboard")
-        title.setObjectName("pageTitle")
-
-        description = QLabel(
-            "CyberLab modüllerini, laboratuvar çalışmalarını "
-            "ve analiz sonuçlarını tek merkezden yönetin."
-        )
-        description.setObjectName("pageDescription")
-        description.setWordWrap(True)
-
-        welcome_card = QFrame()
-        welcome_card.setObjectName("contentCard")
-
-        card_layout = QVBoxLayout(welcome_card)
-        card_layout.setContentsMargins(22, 22, 22, 22)
-
-        card_title = QLabel("CyberLab Desktop Suite")
-        card_title.setObjectName("sectionTitle")
-
-        card_text = QLabel(
-            "İlk masaüstü uygulama kabuğu başarıyla çalışıyor.\n\n"
-            "Sonraki aşamada Wi-Fi analiz motoru arka plan worker "
-            "üzerinden arayüze bağlanacaktır."
-        )
-        card_text.setWordWrap(True)
-
-        card_layout.addWidget(card_title)
-        card_layout.addWidget(card_text)
-
-        layout.addWidget(title)
-        layout.addWidget(description)
-        layout.addWidget(welcome_card)
-        layout.addStretch(1)
-
-        return page
-
-    def _create_wifi_page(self) -> QWidget:
-        """Wi-Fi Forensics modülünün geçici sayfasını oluşturur."""
-
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(16)
-
-        title = QLabel("Wi-Fi Forensics")
-        title.setObjectName("pageTitle")
-
-        description = QLabel(
-            "CAP, PCAP ve PCAPNG dosyalarını analiz eden "
-            "CyberLab modülü."
-        )
-        description.setObjectName("pageDescription")
-        description.setWordWrap(True)
-
-        module_card = QFrame()
-        module_card.setObjectName("contentCard")
-
-        card_layout = QVBoxLayout(module_card)
-        card_layout.setContentsMargins(22, 22, 22, 22)
-
-        status_title = QLabel("Modül Durumu")
-        status_title.setObjectName("sectionTitle")
-
-        status_text = QLabel(
-            "Arayüz iskeleti hazır.\n"
-            "Analiz motoru sonraki görevde bağlanacak."
-        )
-        status_text.setWordWrap(True)
-
-        card_layout.addWidget(status_title)
-        card_layout.addWidget(status_text)
-
-        layout.addWidget(title)
-        layout.addWidget(description)
-        layout.addWidget(module_card)
-        layout.addStretch(1)
-
-        return page
-
     def _select_page(self, page_index: int) -> None:
         """Seçilen sayfayı görüntüler."""
 
-        if page_index < 0 or page_index >= self.stack.count():
+        if not 0 <= page_index < self.stack.count():
             return
 
         self.stack.setCurrentIndex(page_index)
 
-        for index, button in enumerate(self.navigation_buttons):
+        for index, button in enumerate(
+            self.navigation_buttons
+        ):
             button.setChecked(index == page_index)
 
         page_names = {
@@ -216,7 +163,158 @@ class MainWindow(QMainWindow):
             1: "Wi-Fi Forensics",
         }
 
-        selected_name = page_names.get(page_index, "CyberLab")
+        selected_name = page_names.get(
+            page_index,
+            "CyberLab",
+        )
+
         self.statusBar().showMessage(
             f"{selected_name} sayfası açıldı."
+        )
+
+    def _on_capture_selected(
+        self,
+        capture_file: Path,
+    ) -> None:
+        """Yakalama dosyası seçildiğinde durum çubuğunu günceller."""
+
+        self.statusBar().showMessage(
+            f"Seçilen dosya: {capture_file.name}"
+        )
+
+    def _on_analysis_requested(
+        self,
+        capture_file: Path,
+    ) -> None:
+        """Seçilen yakalama dosyasının analizini başlatır."""
+
+        if self.active_worker is not None:
+            QMessageBox.information(
+                self,
+                "Analiz devam ediyor",
+                "Mevcut analiz tamamlanmadan yeni analiz başlatılamaz.",
+            )
+            return
+
+        worker = AnalysisWorker(capture_file)
+        self.active_worker = worker
+
+        worker.signals.progress.connect(
+            self._on_analysis_progress
+        )
+        worker.signals.completed.connect(
+            self._on_analysis_completed
+        )
+        worker.signals.failed.connect(
+            self._on_analysis_failed
+        )
+        worker.signals.finished.connect(
+            self._on_analysis_finished
+        )
+
+        self.wifi_page.browse_button.setEnabled(False)
+        self.wifi_page.analyze_button.setEnabled(False)
+        self.wifi_page.progress_bar.setValue(0)
+        self.wifi_page.network_table.setRowCount(0)
+
+        self.statusBar().showMessage(
+            f"Analiz başlatıldı: {capture_file.name}"
+        )
+
+        self.thread_pool.start(worker)
+
+
+    def _on_analysis_progress(
+        self,
+        value: int,
+        message: str,
+    ) -> None:
+        """Analiz ilerlemesini Wi-Fi sayfasında gösterir."""
+
+        self.wifi_page.progress_bar.setValue(value)
+        self.wifi_page.status_label.setText(message)
+        self.statusBar().showMessage(message)
+
+
+    def _on_analysis_completed(
+        self,
+        report: dict[str, Any],
+    ) -> None:
+        """Analiz sonuçlarını kartlara ve tabloya aktarır."""
+
+        networks = report.get("networks", [])
+
+        client_macs = {
+            client.get("mac")
+            for network in networks
+            for client in network.get("clients", [])
+            if client.get("mac")
+        }
+
+        self.wifi_page.summary_values["packets"].setText(
+            str(report.get("total_packets", 0))
+        )
+        self.wifi_page.summary_values["networks"].setText(
+            str(report.get("network_count", len(networks)))
+        )
+        self.wifi_page.summary_values["clients"].setText(
+            str(len(client_macs))
+        )
+        self.wifi_page.summary_values["eapol"].setText(
+            str(report.get("eapol_packet_count", 0))
+        )
+
+        self.wifi_page.network_table.setRowCount(len(networks))
+
+        for row_index, network in enumerate(networks):
+            ssids = network.get("ssids", [])
+            signal = network.get("average_signal_dbm")
+            channel = network.get("channel")
+            clients = network.get("clients", [])
+
+            values = [
+                ", ".join(ssids) if ssids else "<Gizli SSID>",
+                str(network.get("bssid", "")),
+                str(channel if channel is not None else "—"),
+                f"{signal} dBm" if signal is not None else "—",
+                str(len(clients)),
+            ]
+
+            for column_index, value in enumerate(values):
+                self.wifi_page.network_table.setItem(
+                    row_index,
+                    column_index,
+                    QTableWidgetItem(value),
+                )
+
+        self.wifi_page.status_label.setText(
+            "Analiz başarıyla tamamlandı."
+        )
+        self.statusBar().showMessage("Analiz tamamlandı.")
+
+
+    def _on_analysis_failed(
+        self,
+        error_message: str,
+    ) -> None:
+        """Analiz sırasında oluşan hatayı gösterir."""
+
+        self.wifi_page.status_label.setText(
+            "Analiz sırasında hata oluştu."
+        )
+
+        QMessageBox.critical(
+            self,
+            "Analiz hatası",
+            error_message,
+        )
+
+
+    def _on_analysis_finished(self) -> None:
+        """Analiz kontrollerini yeniden etkinleştirir."""
+
+        self.active_worker = None
+        self.wifi_page.browse_button.setEnabled(True)
+        self.wifi_page.analyze_button.setEnabled(
+            self.wifi_page.selected_capture is not None
         )
