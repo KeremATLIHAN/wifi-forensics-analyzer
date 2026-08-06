@@ -1,0 +1,10 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "include": [
+        "gui",
+        "src",
+        "main.py",
+        "gui_app.py"
+    ]
+}
