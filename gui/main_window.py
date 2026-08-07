@@ -201,6 +201,8 @@ class MainWindow(QMainWindow):
 
         self.analysis_started_at = perf_counter()
 
+        self.dashboard_page.set_analysis_running()
+
         self.wifi_page.add_log(f"● Analiz başlatıldı: {capture_file.name}")
 
         if self.active_worker is not None:
@@ -334,10 +336,16 @@ class MainWindow(QMainWindow):
         )
 
         if self.analysis_started_at is not None:
-         elapsed = perf_counter() - self.analysis_started_at
+                elapsed = perf_counter() - self.analysis_started_at
 
-        self.wifi_page.add_log(
-            f"✓ Analiz süresi: {elapsed:.2f} saniye"
+                self.wifi_page.add_log(
+                    f"✓ Analiz süresi: {elapsed:.2f} saniye"
+                )
+
+                self.dashboard_page.update_analysis_summary(
+            report.get("capture_name", "Bilinmeyen dosya"),
+            report.get("total_packets", 0),
+            len(networks),
         )
 
 
@@ -368,7 +376,7 @@ class MainWindow(QMainWindow):
             self.wifi_page.add_log(
                 f"✕ Analiz {elapsed:.2f} saniye sonra başarısız oldu."
             )
-
+        self.dashboard_page.set_analysis_failed()
 
     def _on_analysis_finished(self) -> None:
         """Analiz kontrollerini yeniden etkinleştirir."""
