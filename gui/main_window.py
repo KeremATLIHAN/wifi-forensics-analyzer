@@ -243,6 +243,10 @@ class MainWindow(QMainWindow):
         self.wifi_page.status_label.setText(message)
         self.statusBar().showMessage(message)
 
+        self.wifi_page.status_label.setStyleSheet(
+                "color: #FBBF24; font-weight: 600;"
+            )
+
 
     def _on_analysis_completed(
         self,
@@ -299,6 +303,9 @@ class MainWindow(QMainWindow):
                     QTableWidgetItem(value),
                 )
 
+        self.wifi_page.status_label.setStyleSheet(
+            "color: #34D399; font-weight: 600;"
+        )
         self.wifi_page.status_label.setText(
             "Analiz başarıyla tamamlandı."
         )
@@ -311,6 +318,9 @@ class MainWindow(QMainWindow):
     ) -> None:
         """Analiz sırasında oluşan hatayı gösterir."""
 
+        self.wifi_page.status_label.setStyleSheet(
+            "color: #F87171; font-weight: 600;"
+        )
         self.wifi_page.status_label.setText(
             "Analiz sırasında hata oluştu."
         )

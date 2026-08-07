@@ -114,8 +114,12 @@ class WifiPage(QWidget):
         controls.addWidget(self.browse_button)
         controls.addWidget(self.analyze_button)
 
+        self.progress_bar.setObjectName("analysisProgress")
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%p%")
+        self.progress_bar.setFixedHeight(18)
 
         layout.addLayout(controls)
         layout.addWidget(self.progress_bar)
@@ -131,14 +135,17 @@ class WifiPage(QWidget):
         layout.setSpacing(12)
 
         cards = (
-            ("packets", "Paketler"),
-            ("networks", "Ağlar"),
-            ("clients", "İstemciler"),
-            ("eapol", "EAPOL"),
+            ("packets", "◫", "Paketler"),
+            ("networks", "◉", "Ağlar"),
+            ("clients", "♟", "İstemciler"),
+            ("eapol", "◆", "EAPOL"),
         )
 
-        for key, title in cards:
-            card, value_label = self._create_summary_card(title)
+        for key, icon, title in cards:
+            card, value_label = self._create_summary_card(
+                icon,
+                title,
+            )
             self.summary_values[key] = value_label
             layout.addWidget(card)
 
@@ -146,24 +153,38 @@ class WifiPage(QWidget):
 
     @staticmethod
     def _create_summary_card(
+        icon: str,
         title: str,
     ) -> tuple[QFrame, QLabel]:
-        """Tek bir özet kartı oluşturur."""
+        """Tek bir modern özet kartı oluşturur."""
 
         card = QFrame()
         card.setObjectName("summaryCard")
+        card.setMinimumHeight(118)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setContentsMargins(18, 15, 18, 15)
+        layout.setSpacing(5)
+
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(8)
+
+        icon_label = QLabel(icon)
+        icon_label.setObjectName("summaryIcon")
 
         title_label = QLabel(title)
         title_label.setObjectName("summaryTitle")
 
+        header_layout.addWidget(icon_label)
+        header_layout.addWidget(title_label)
+        header_layout.addStretch(1)
+
         value_label = QLabel("—")
         value_label.setObjectName("summaryValue")
 
-        layout.addWidget(title_label)
+        layout.addLayout(header_layout)
         layout.addWidget(value_label)
+        layout.addStretch(1)
 
         return card, value_label
 
@@ -235,6 +256,9 @@ class WifiPage(QWidget):
         self.analyze_button.setEnabled(True)
         self.progress_bar.setValue(0)
 
+        self.status_label.setStyleSheet(
+            "color: #94A3B8; font-weight: 600;"
+        )
         self.status_label.setText(
             "Dosya seçildi. Analizi başlatabilirsiniz."
         )

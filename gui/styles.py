@@ -41,13 +41,21 @@ QLabel#sectionTitle {
     font-weight: 600;
 }
 
+QLabel#summaryIcon {
+    color: #22D3A6;
+    font-size: 19px;
+    font-weight: 700;
+}
+
 QLabel#summaryTitle {
-    color: #9CA3AF;
+    color: #94A3B8;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 QLabel#summaryValue {
-    color: #F9FAFB;
-    font-size: 26px;
+    color: #F8FAFC;
+    font-size: 30px;
     font-weight: 700;
 }
 
@@ -56,11 +64,21 @@ QLabel#moduleStatus {
     padding: 4px;
 }
 
-QFrame#contentCard,
-QFrame#summaryCard {
+QFrame#contentCard {
     background-color: #182235;
     border: 1px solid #29364B;
     border-radius: 10px;
+}
+
+QFrame#summaryCard {
+    background-color: #182235;
+    border: 1px solid #2C3A50;
+    border-radius: 12px;
+}
+
+QFrame#summaryCard:hover {
+    background-color: #1D2A3F;
+    border-color: #22D3A6;
 }
 
 QPushButton {
@@ -173,5 +191,20 @@ QProgressBar#splashProgress {
 QProgressBar#splashProgress::chunk {
     background-color: #22D3A6;
     border-radius: 4px;
+}
+
+QProgressBar#analysisProgress {
+    background-color: #101827;
+    border: 1px solid #34445D;
+    border-radius: 8px;
+    color: #E5E7EB;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+}
+
+QProgressBar#analysisProgress::chunk {
+    background-color: #0F9F79;
+    border-radius: 7px;
 }
 """
