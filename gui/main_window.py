@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from time import perf_counter
 
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
         self.active_worker: AnalysisWorker | None = None
         self.last_networks: list[dict[str, Any]] = []
         self.last_eapol_count = 0
+        self.analysis_started_at: float | None = None
 
         self._build_ui()
         self._connect_page_signals()
@@ -197,6 +199,8 @@ class MainWindow(QMainWindow):
 
         self.wifi_page.clear_log()
 
+        self.analysis_started_at = perf_counter()
+
         self.wifi_page.add_log(f"● Analiz başlatıldı: {capture_file.name}")
 
         if self.active_worker is not None:
@@ -329,6 +333,13 @@ class MainWindow(QMainWindow):
             f"✓ {len(networks)} ağ tespit edildi."
         )
 
+        if self.analysis_started_at is not None:
+         elapsed = perf_counter() - self.analysis_started_at
+
+        self.wifi_page.add_log(
+            f"✓ Analiz süresi: {elapsed:.2f} saniye"
+        )
+
 
     def _on_analysis_failed(
         self,
@@ -351,6 +362,13 @@ class MainWindow(QMainWindow):
             error_message,
         )
 
+        if self.analysis_started_at is not None:
+            elapsed = perf_counter() - self.analysis_started_at
+
+            self.wifi_page.add_log(
+                f"✕ Analiz {elapsed:.2f} saniye sonra başarısız oldu."
+            )
+
 
     def _on_analysis_finished(self) -> None:
         """Analiz kontrollerini yeniden etkinleştirir."""
@@ -360,6 +378,7 @@ class MainWindow(QMainWindow):
         self.wifi_page.analyze_button.setEnabled(
             self.wifi_page.selected_capture is not None
         )
+        self.analysis_started_at = None
 
     def _on_network_selected(self) -> None:
         """Tabloda seçilen ağın ayrıntılarını gösterir."""
