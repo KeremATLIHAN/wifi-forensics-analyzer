@@ -184,14 +184,20 @@ class MainWindow(QMainWindow):
         """Yakalama dosyası seçildiğinde durum çubuğunu günceller."""
 
         self.statusBar().showMessage(
-            f"Seçilen dosya: {capture_file.name}"
+           f"● Dosya seçildi: {capture_file.name}"
         )
+
+        self.wifi_page.add_log(f"Yakalama dosyası seçildi: {capture_file.name}")
 
     def _on_analysis_requested(
         self,
         capture_file: Path,
     ) -> None:
         """Seçilen yakalama dosyasının analizini başlatır."""
+
+        self.wifi_page.clear_log()
+
+        self.wifi_page.add_log(f"● Analiz başlatıldı: {capture_file.name}")
 
         if self.active_worker is not None:
             QMessageBox.information(
@@ -238,7 +244,7 @@ class MainWindow(QMainWindow):
         message: str,
     ) -> None:
         """Analiz ilerlemesini Wi-Fi sayfasında gösterir."""
-
+        self.wifi_page.add_log( f"● {message}")
         self.wifi_page.progress_bar.setValue(value)
         self.wifi_page.status_label.setText(message)
         self.statusBar().showMessage(message)
@@ -311,6 +317,18 @@ class MainWindow(QMainWindow):
         )
         self.statusBar().showMessage("Analiz tamamlandı.")
 
+        self.wifi_page.add_log(
+            "✓ Analiz başarıyla tamamlandı."
+        )
+
+        self.wifi_page.add_log(
+            f"✓ {report.get('total_packets', 0)} paket işlendi."
+        )
+
+        self.wifi_page.add_log(
+            f"✓ {len(networks)} ağ tespit edildi."
+        )
+
 
     def _on_analysis_failed(
         self,
@@ -324,7 +342,9 @@ class MainWindow(QMainWindow):
         self.wifi_page.status_label.setText(
             "Analiz sırasında hata oluştu."
         )
-
+        self.wifi_page.add_log(
+            "✕ Analiz sırasında hata oluştu."
+        )
         QMessageBox.critical(
             self,
             "Analiz hatası",

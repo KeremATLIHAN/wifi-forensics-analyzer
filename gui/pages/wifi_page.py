@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QVBoxLayout,
     QWidget,
+    QPlainTextEdit,
+
 )
 
 
@@ -40,6 +42,7 @@ class WifiPage(QWidget):
             "Analiz için bir yakalama dosyası seçin."
         )
         self.network_table = QTableWidget()
+        self.analysis_log = QPlainTextEdit()
         self.detail_values: dict[str, QLabel] = {}
 
         self._build_ui()
@@ -74,8 +77,7 @@ class WifiPage(QWidget):
         results_layout.addWidget(self._create_network_details_panel(), 2)
 
         layout.addLayout(results_layout, 1)
-        
-
+        layout.addWidget(self._create_log_panel())
         self.status_label.setObjectName("moduleStatus")
         layout.addWidget(self.status_label)
 
@@ -370,3 +372,46 @@ class WifiPage(QWidget):
 
         for label in self.detail_values.values():
             label.setText("—")
+
+    def _create_log_panel(self) -> QFrame:
+        """Canlı analiz günlüğü panelini oluşturur."""
+
+        panel = QFrame()
+        panel.setObjectName("contentCard")
+        panel.setMaximumHeight(170)
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(8)
+
+        heading = QLabel("Analiz Günlüğü")
+        heading.setObjectName("sectionTitle")
+
+        self.analysis_log.setReadOnly(True)
+        self.analysis_log.setObjectName("analysisLog")
+        self.analysis_log.setPlaceholderText(
+            "Analiz işlemleri burada görüntülenecek..."
+        )
+        self.analysis_log.setMaximumBlockCount(200)
+
+        layout.addWidget(heading)
+        layout.addWidget(self.analysis_log)
+
+        return panel
+
+    def add_log(self, message: str) -> None:
+        """Analiz günlüğüne bir mesaj ekler."""
+
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%H:%M:%S")
+
+        self.analysis_log.appendPlainText(f"[{timestamp}] {message}")
+
+        scroll_bar = self.analysis_log.verticalScrollBar()
+        scroll_bar.setValue(scroll_bar.maximum())
+
+    def clear_log(self) -> None:
+        """Analiz günlüğünü temizler."""
+
+        self.analysis_log.clear()

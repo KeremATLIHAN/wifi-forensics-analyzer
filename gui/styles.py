@@ -207,4 +207,18 @@ QProgressBar#analysisProgress::chunk {
     background-color: #0F9F79;
     border-radius: 7px;
 }
+
+QPlainTextEdit#analysisLog {
+    background-color: #0B1220;
+    border: 1px solid #29364B;
+    border-radius: 8px;
+    padding: 8px;
+
+    color: #CBD5E1;
+
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+
+    selection-background-color: #164E63;
+}
 """
