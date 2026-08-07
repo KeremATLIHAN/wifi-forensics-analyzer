@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QPlainTextEdit,
+    QAbstractItemView,
 
 )
 
@@ -225,6 +226,16 @@ class WifiPage(QWidget):
             QHeaderView.ResizeMode.Stretch,
         )
 
+        self.network_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+
+        self.network_table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+
+        self.network_table.setShowGrid(False)
+
         for column in range(1, 5):
             header.setSectionResizeMode(
                 column,
@@ -362,16 +373,29 @@ class WifiPage(QWidget):
         self.detail_values["eapol"].setText(
             str(eapol_count)
         )
+        handshake_found = eapol_count >= 4
+
         self.detail_values["handshake"].setText(
-            "Bulundu" if eapol_count >= 4 else "Bulunamadı"
+            "● Bulundu" if handshake_found else "● Bulunamadı"
+        )
+
+        self.detail_values["handshake"].setStyleSheet(
+            (
+                "color: #34D399; font-weight: 700;"
+                if handshake_found
+                else "color: #F87171; font-weight: 700;"
+            )
         )
 
 
     def clear_network_details(self) -> None:
-        """Detay panelini temizler."""
+     """Detay panelini temizler."""
 
-        for label in self.detail_values.values():
-            label.setText("—")
+    for key, label in self.detail_values.items():
+        label.setText("—")
+
+        if key == "handshake":
+            label.setStyleSheet("")
 
     def _create_log_panel(self) -> QFrame:
         """Canlı analiz günlüğü panelini oluşturur."""

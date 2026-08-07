@@ -315,6 +315,14 @@ class MainWindow(QMainWindow):
                     QTableWidgetItem(value),
                 )
 
+        if networks:
+            self.wifi_page.network_table.selectRow(0)
+
+            self.wifi_page.show_network_details(
+                networks[0],
+                self.last_eapol_count,
+            )
+
         self.wifi_page.status_label.setStyleSheet(
             "color: #34D399; font-weight: 600;"
         )
