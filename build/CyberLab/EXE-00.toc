@@ -64,7 +64,7 @@
  [],
  False,
  False,
- 1786112910,
+ 1786115715,
  [('runw.exe',
    'C:\\Users\\kerem\\OneDrive\\Desktop\\VS_Code\\CyberLab\\wifi-forensics-analyzer\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
    'EXECUTABLE')],

@@ -11,14 +11,40 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from pathlib import Path
+from PySide6.QtGui import QPixmap
+from gui.resource_utils import resource_path
 
 
 class SplashScreen(QWidget):
     """Uygulama başlatılırken gösterilen özel açılış penceresi."""
+    
+
+    
 
     def __init__(self) -> None:
         super().__init__()
 
+        self.logo_label = QLabel()
+        
+        logo_path = resource_path(
+            "resources",
+            "logo",
+            "cyberlab_logo.png",
+        )
+                
+        if logo_path.exists():
+                        pixmap = QPixmap(str(logo_path))
+                
+                        self.logo_label.setPixmap(
+                            pixmap.scaled(
+                                300,
+                                300,
+                                Qt.AspectRatioMode.KeepAspectRatio,
+                                Qt.TransformationMode.SmoothTransformation,
+                            )
+                        )   
+        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
@@ -47,6 +73,7 @@ class SplashScreen(QWidget):
         layout.setContentsMargins(48, 42, 48, 36)
         layout.setSpacing(14)
 
+        layout.addWidget(self.logo_label)
         brand_label = QLabel("CYBERLAB")
         brand_label.setObjectName("splashBrand")
         brand_label.setAlignment(Qt.AlignmentFlag.AlignCenter)

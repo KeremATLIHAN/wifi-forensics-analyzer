@@ -8,7 +8,14 @@ from PySide6.QtWidgets import (
     QLabel,
     QVBoxLayout,
     QWidget,
+    QHBoxLayout,
 )
+
+from pathlib import Path
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from gui.resource_utils import resource_path
 
 
 class DashboardPage(QWidget):
@@ -38,8 +45,38 @@ class DashboardPage(QWidget):
         description.setObjectName("pageDescription")
         description.setWordWrap(True)
 
-        layout.addWidget(title)
-        layout.addWidget(description)
+        logo = QLabel()
+
+        logo_path = resource_path(
+            "resources",
+            "logo",
+            "cyberlab_logo.png",
+        )
+
+        if logo_path.exists():
+            pixmap = QPixmap(str(logo_path))
+
+            logo.setPixmap(
+                pixmap.scaled(
+                    190,
+                    190,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+
+        logo.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        header_layout = QHBoxLayout()
+        text_layout = QVBoxLayout()
+
+        text_layout.addWidget(title)
+        text_layout.addWidget(description)
+
+        header_layout.addLayout(text_layout, 1)
+        header_layout.addWidget(logo)
+
+        layout.addLayout(header_layout)
         layout.addWidget(self._create_metrics_panel())
         layout.addWidget(self._create_system_card())
         layout.addStretch(1)

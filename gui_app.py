@@ -21,7 +21,7 @@ from pathlib import Path
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
-
+from gui.resource_utils import resource_path
 
 class ApplicationLauncher:
     """Splash ekranından ana pencereye geçişi yönetir."""
@@ -37,11 +37,10 @@ class ApplicationLauncher:
 
         base_dir = Path(__file__).resolve().parent
 
-        icon_path = (
-            base_dir
-            / "resources"
-            / "icons"
-            / "cyberlab.ico"
+        icon_path = resource_path(
+            "resources",
+            "icons",
+            "cyberlab.ico",
         )
 
         if icon_path.exists():
