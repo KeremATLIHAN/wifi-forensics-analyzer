@@ -12,13 +12,56 @@ from PySide6.QtWidgets import QApplication
 from gui.main_window import MainWindow
 from gui.splash_screen import SplashScreen
 from gui.styles import DARK_STYLESHEET
+from pathlib import Path
+from PySide6.QtGui import QIcon
+
+import ctypes
+import sys
+from pathlib import Path
+
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication
 
 
 class ApplicationLauncher:
     """Splash ekranından ana pencereye geçişi yönetir."""
 
+    if sys.platform == "win32":
+        app_id = "CyberLab.DesktopSuite.v0.2"
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            app_id
+        )
+
     def __init__(self, app: QApplication) -> None:
         self.app = app
+
+        base_dir = Path(__file__).resolve().parent
+
+        icon_path = (
+            base_dir
+            / "resources"
+            / "icons"
+            / "cyberlab.ico"
+        )
+
+        if icon_path.exists():
+            icon = QIcon(str(icon_path))
+
+            self.app.setWindowIcon(icon)
+
+        base_dir = Path(__file__).resolve().parent
+
+        icon_path = (
+            base_dir
+            / "resources"
+            / "icons"
+            / "cyberlab.ico"
+        )
+
+        if icon_path.exists():
+            self.app.setWindowIcon(
+                QIcon(str(icon_path))
+            )
 
         self.splash = SplashScreen()
         self.main_window: MainWindow | None = None
@@ -37,6 +80,8 @@ class ApplicationLauncher:
         self.timer = QTimer()
         self.timer.setInterval(350)
         self.timer.timeout.connect(self._advance_loading)
+
+   
 
     def start(self) -> None:
         """Splash ekranını gösterip yükleme akışını başlatır."""
@@ -80,6 +125,7 @@ class ApplicationLauncher:
         """Splash ekranını kapatıp ana pencereyi açar."""
 
         self.main_window = MainWindow()
+        self.main_window.setWindowIcon(QIcon("resources/icons/cyberlab.ico"))
         self.main_window.show()
 
         self.splash.close()

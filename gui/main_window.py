@@ -32,6 +32,25 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        from pathlib import Path
+        from PySide6.QtGui import QIcon
+
+        base_dir = Path(__file__).resolve().parent
+        icon_path = base_dir / "resources" / "icons" / "cyberlab.ico"
+
+        icon_path = (
+            Path(__file__).resolve().parent.parent
+            / "resources"
+            / "icons"
+            / "cyberlab.ico"
+        )
+
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+
         self.setWindowTitle("CyberLab Desktop Suite")
         self.resize(1280, 780)
         self.setMinimumSize(1000, 650)

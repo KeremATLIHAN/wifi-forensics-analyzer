@@ -389,13 +389,13 @@ class WifiPage(QWidget):
 
 
     def clear_network_details(self) -> None:
-     """Detay panelini temizler."""
+        """Detay panelini temizler."""
 
-    for key, label in self.detail_values.items():
-        label.setText("—")
+        for key, label in self.detail_values.items():
+            label.setText("—")
 
-        if key == "handshake":
-            label.setStyleSheet("")
+            if key == "handshake":
+                label.setStyleSheet("")
 
     def _create_log_panel(self) -> QFrame:
         """Canlı analiz günlüğü panelini oluşturur."""
