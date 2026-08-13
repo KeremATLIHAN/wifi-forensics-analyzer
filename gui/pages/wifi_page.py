@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QAbstractItemView,
     QTableWidgetItem,
+    QSplitter,
 
 )
 
@@ -73,13 +74,38 @@ class WifiPage(QWidget):
         layout.addWidget(self._create_capture_panel())
         layout.addWidget(self._create_summary_panel())
 
-        results_layout = QHBoxLayout()
-        results_layout.setSpacing(12)
+        results_splitter = QSplitter(
+            Qt.Orientation.Horizontal
+        )
 
-        results_layout.addWidget(self._create_networks_panel(), 3)
-        results_layout.addWidget(self._create_network_details_panel(), 2)
+        results_splitter.setObjectName(
+            "resultsSplitter"
+        )
 
-        layout.addLayout(results_layout, 1)
+        results_splitter.setChildrenCollapsible(False)
+
+        results_splitter.addWidget(
+            self._create_networks_panel()
+        )
+
+        results_splitter.addWidget(
+            self._create_network_details_panel()
+        )
+
+        results_splitter.setStretchFactor(0, 3)
+        results_splitter.setStretchFactor(1, 2)
+
+        results_splitter.setSizes(
+            [700, 420]
+        )
+
+        layout.addWidget(results_splitter, 2)
+
+        layout.addWidget(
+            self._create_clients_panel(),
+            1,
+        )
+       
         layout.addWidget(self._create_log_panel())
         self.status_label.setObjectName("moduleStatus")
         layout.addWidget(self.status_label)
@@ -227,6 +253,22 @@ class WifiPage(QWidget):
             0,
             QHeaderView.ResizeMode.Stretch,
         )
+        header.setSectionResizeMode(
+            1,
+            QHeaderView.ResizeMode.Stretch,
+        )
+        header.setSectionResizeMode(
+            2,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
+        header.setSectionResizeMode(
+            3,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
+        header.setSectionResizeMode(
+            4,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
 
         self.network_table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows
@@ -237,12 +279,6 @@ class WifiPage(QWidget):
         )
 
         self.network_table.setShowGrid(False)
-
-        for column in range(1, 5):
-            header.setSectionResizeMode(
-                column,
-                QHeaderView.ResizeMode.ResizeToContents,
-            )
 
         layout.addWidget(heading)
         layout.addWidget(self.network_table)
@@ -298,7 +334,7 @@ class WifiPage(QWidget):
 
         panel = QFrame()
         panel.setObjectName("contentCard")
-        panel.setMinimumWidth(300)
+        panel.setMinimumWidth(240)
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(18, 18, 18, 18)
@@ -333,55 +369,14 @@ class WifiPage(QWidget):
                 | Qt.TextInteractionFlag.TextSelectableByMouse
             )
 
+            title_label.setMinimumWidth(90)
             row.addWidget(title_label)
-            row.addStretch(1)
-            row.addWidget(value_label)
+            row.addWidget(value_label, 1)
 
             self.detail_values[key] = value_label
             layout.addLayout(row)
 
-        clients_heading = QLabel("İstemci Cihazları")
-        clients_heading.setObjectName("sectionTitle")
-
-        self.client_table.setColumnCount(2)
-        self.client_table.setHorizontalHeaderLabels(
-            [
-                "MAC Adresi",
-                "Paket",
-            ]
-        )
-
-        self.client_table.setEditTriggers(
-            QTableWidget.EditTrigger.NoEditTriggers
-        )
-
-        self.client_table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
-
-        self.client_table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection
-        )
-
-        self.client_table.setAlternatingRowColors(True)
-        self.client_table.setShowGrid(False)
-        self.client_table.verticalHeader().setVisible(False)
-
-        client_header = self.client_table.horizontalHeader()
-
-        client_header.setSectionResizeMode(
-            0,
-            QHeaderView.ResizeMode.Stretch,
-        )
-
-        client_header.setSectionResizeMode(
-            1,
-            QHeaderView.ResizeMode.ResizeToContents,
-        )
-
-        layout.addSpacing(10)
-        layout.addWidget(clients_heading)
-        layout.addWidget(self.client_table, 1)
+            layout.addStretch(1)
 
         return panel
 
@@ -507,3 +502,69 @@ class WifiPage(QWidget):
         """Analiz günlüğünü temizler."""
 
         self.analysis_log.clear()
+
+
+    def _create_clients_panel(self) -> QFrame:
+        """Seçilen ağa bağlı istemci cihazlarını gösterir."""
+
+        panel = QFrame()
+        panel.setObjectName("contentCard")
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(
+            18,
+            16,
+            18,
+            16,
+        )
+        layout.setSpacing(10)
+
+        heading = QLabel("İstemci Cihazları")
+        heading.setObjectName("sectionTitle")
+
+        self.client_table.setColumnCount(2)
+
+        self.client_table.setHorizontalHeaderLabels(
+            [
+                "MAC Adresi",
+                "Paket Sayısı",
+            ]
+        )
+
+        self.client_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+
+        self.client_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+
+        self.client_table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+
+        self.client_table.setAlternatingRowColors(True)
+        self.client_table.setShowGrid(False)
+
+        self.client_table.verticalHeader().setVisible(
+            False
+        )
+
+        header = self.client_table.horizontalHeader()
+
+        header.setSectionResizeMode(
+            0,
+            QHeaderView.ResizeMode.Stretch,
+        )
+
+        header.setSectionResizeMode(
+            1,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
+
+        self.client_table.setMinimumHeight(170)
+
+        layout.addWidget(heading)
+        layout.addWidget(self.client_table)
+
+        return panel

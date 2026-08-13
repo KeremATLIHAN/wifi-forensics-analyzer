@@ -37,18 +37,26 @@ QLabel#pageDescription {
 }
 
 QLabel#sectionTitle {
-    font-size: 16px;
-    font-weight: 600;
+    color: #F8FAFC;
+    font-size: 15px;
+    font-weight: 700;
+    padding-bottom: 6px;
 }
 
 QLabel#summaryIcon {
     color: #22D3A6;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 700;
+
+    background-color: transparent;
+    border: 1px solid #2D6B61;
+    border-radius: 8px;
+
+    padding: 4px 7px;
 }
 
 QLabel#summaryTitle {
-    color: #94A3B8;
+    color: #CBD5E1;
     font-size: 13px;
     font-weight: 600;
 }
@@ -65,19 +73,19 @@ QLabel#moduleStatus {
 }
 
 QFrame#contentCard {
-    background-color: #182235;
-    border: 1px solid #29364B;
-    border-radius: 10px;
+    background-color: transparent;
+    border: 1px solid #34445D;
+    border-radius: 12px;
 }
 
 QFrame#summaryCard {
-    background-color: #182235;
-    border: 1px solid #2C3A50;
+    background-color: transparent;
+    border: 1px solid #34445D;
     border-radius: 12px;
 }
 
 QFrame#summaryCard:hover {
-    background-color: #1D2A3F;
+    background-color: rgba(34, 211, 166, 0.04);
     border-color: #22D3A6;
 }
 
@@ -220,5 +228,15 @@ QPlainTextEdit#analysisLog {
     font-size: 12px;
 
     selection-background-color: #164E63;
+}
+
+QSplitter#resultsSplitter::handle {
+    background-color: transparent;
+    width: 8px;
+}
+
+QSplitter#resultsSplitter::handle:hover {
+    background-color: #22D3A6;
+    border-radius: 3px;
 }
 """

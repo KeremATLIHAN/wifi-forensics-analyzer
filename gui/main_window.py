@@ -52,8 +52,8 @@ class MainWindow(QMainWindow):
             self.setWindowIcon(QIcon(str(icon_path)))
 
         self.setWindowTitle("CyberLab Desktop Suite")
-        self.resize(1280, 780)
-        self.setMinimumSize(1000, 650)
+        self.resize(1440, 900)
+        self.setMinimumSize(1100, 700)
 
         self.navigation_buttons: list[QPushButton] = []
         self.stack = QStackedWidget()
