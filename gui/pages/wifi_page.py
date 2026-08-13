@@ -46,6 +46,8 @@ class WifiPage(QWidget):
         )
         self.network_table = QTableWidget()
         self.client_table = QTableWidget()
+        self.current_clients: list[dict] = []
+        self.device_detail_values: dict[str, QLabel] = {}
         self.analysis_log = QPlainTextEdit()
         self.detail_values: dict[str, QLabel] = {}
 
@@ -102,8 +104,8 @@ class WifiPage(QWidget):
         layout.addWidget(results_splitter, 2)
 
         layout.addWidget(
-            self._create_clients_panel(),
-            1,
+        self._create_clients_section(),
+        1,
         )
        
         layout.addWidget(self._create_log_panel())
@@ -390,6 +392,13 @@ class WifiPage(QWidget):
 
         ssids = network.get("ssids", [])
         clients = network.get("clients", [])
+        self.current_clients = clients
+
+        if clients:
+            self.client_table.selectRow(0)
+        else:
+            self.clear_device_details()
+
         signal = network.get("average_signal_dbm")
         channel = network.get("channel")
 
@@ -460,6 +469,10 @@ class WifiPage(QWidget):
 
         self.client_table.setRowCount(0)
 
+        self.current_clients = []
+        self.client_table.setRowCount(0)
+        self.clear_device_details()
+
     def _create_log_panel(self) -> QFrame:
         """Canlı analiz günlüğü panelini oluşturur."""
 
@@ -504,8 +517,38 @@ class WifiPage(QWidget):
         self.analysis_log.clear()
 
 
+    def _create_clients_section(self) -> QSplitter:
+        """İstemci listesi ve cihaz detaylarını responsive olarak gösterir."""
+
+        splitter = QSplitter(
+            Qt.Orientation.Horizontal
+        )
+
+        splitter.setObjectName(
+            "clientsSplitter"
+        )
+
+        splitter.setChildrenCollapsible(False)
+
+        splitter.addWidget(
+            self._create_clients_panel()
+        )
+
+        splitter.addWidget(
+            self._create_device_details_panel()
+        )
+
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+
+        splitter.setSizes(
+            [720, 400]
+        )
+
+        return splitter 
+
     def _create_clients_panel(self) -> QFrame:
-        """Seçilen ağa bağlı istemci cihazlarını gösterir."""
+        """Seçilen ağa bağlı istemcileri gösterir."""
 
         panel = QFrame()
         panel.setObjectName("contentCard")
@@ -562,9 +605,114 @@ class WifiPage(QWidget):
             QHeaderView.ResizeMode.ResizeToContents,
         )
 
-        self.client_table.setMinimumHeight(170)
+        self.client_table.itemSelectionChanged.connect(
+            self._on_client_selected
+        )
 
         layout.addWidget(heading)
         layout.addWidget(self.client_table)
 
         return panel
+
+    def _create_device_details_panel(self) -> QFrame:
+        """Seçilen istemci cihazının ayrıntılarını gösterir."""
+
+        panel = QFrame()
+        panel.setObjectName("contentCard")
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(
+            18,
+            16,
+            18,
+            16,
+        )
+        layout.setSpacing(12)
+
+        heading = QLabel("Cihaz Detayları")
+        heading.setObjectName("sectionTitle")
+
+        layout.addWidget(heading)
+
+        fields = (
+            ("mac", "MAC Adresi"),
+            ("packets", "Paket Sayısı"),
+            ("status", "Durum"),
+        )
+
+        for key, title in fields:
+
+            row = QHBoxLayout()
+            row.setSpacing(12)
+
+            title_label = QLabel(title)
+            title_label.setObjectName(
+                "detailTitle"
+            )
+            title_label.setMinimumWidth(100)
+
+            value_label = QLabel("—")
+            value_label.setObjectName(
+                "detailValue"
+            )
+
+            value_label.setTextInteractionFlags(
+                Qt.TextInteractionFlag.TextSelectableByMouse
+            )
+
+            row.addWidget(title_label)
+            row.addWidget(value_label, 1)
+
+            self.device_detail_values[key] = (
+                value_label
+            )
+
+            layout.addLayout(row)
+
+        layout.addStretch(1)
+
+        return panel
+
+    def _on_client_selected(self) -> None:
+        """Seçilen istemcinin detaylarını gösterir."""
+
+        row = self.client_table.currentRow()
+
+        if not 0 <= row < len(self.current_clients):
+            self.clear_device_details()
+            return
+
+        client = self.current_clients[row]
+
+        mac_address = str(
+            client.get("mac", "—")
+        )
+
+        packet_count = int(
+            client.get("packet_count", 0)
+        )
+
+        self.device_detail_values["mac"].setText(
+            mac_address
+        )
+
+        self.device_detail_values["packets"].setText(
+            str(packet_count)
+        )
+
+        self.device_detail_values["status"].setText(
+            "● Aktif"
+        )
+
+        self.device_detail_values[
+            "status"
+        ].setStyleSheet(
+            "color: #34D399; font-weight: 700;"
+        )
+
+    def clear_device_details(self) -> None:
+        """Cihaz detay panelini temizler."""
+
+        for label in self.device_detail_values.values():
+            label.setText("—")
+            label.setStyleSheet("")

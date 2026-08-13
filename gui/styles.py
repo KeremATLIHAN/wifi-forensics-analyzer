@@ -239,4 +239,26 @@ QSplitter#resultsSplitter::handle:hover {
     background-color: #22D3A6;
     border-radius: 3px;
 }
+
+QLabel#detailTitle {
+    color: #94A3B8;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+QLabel#detailValue {
+    color: #F8FAFC;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QSplitter#clientsSplitter::handle {
+    background-color: transparent;
+    width: 8px;
+}
+
+QSplitter#clientsSplitter::handle:hover {
+    background-color: #22D3A6;
+    border-radius: 3px;
+}
 """
