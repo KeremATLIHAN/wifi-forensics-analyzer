@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QPlainTextEdit,
     QAbstractItemView,
+    QTableWidgetItem,
 
 )
 
@@ -43,6 +44,7 @@ class WifiPage(QWidget):
             "Analiz için bir yakalama dosyası seçin."
         )
         self.network_table = QTableWidget()
+        self.client_table = QTableWidget()
         self.analysis_log = QPlainTextEdit()
         self.detail_values: dict[str, QLabel] = {}
 
@@ -338,7 +340,48 @@ class WifiPage(QWidget):
             self.detail_values[key] = value_label
             layout.addLayout(row)
 
-        layout.addStretch(1)
+        clients_heading = QLabel("İstemci Cihazları")
+        clients_heading.setObjectName("sectionTitle")
+
+        self.client_table.setColumnCount(2)
+        self.client_table.setHorizontalHeaderLabels(
+            [
+                "MAC Adresi",
+                "Paket",
+            ]
+        )
+
+        self.client_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+
+        self.client_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+
+        self.client_table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+
+        self.client_table.setAlternatingRowColors(True)
+        self.client_table.setShowGrid(False)
+        self.client_table.verticalHeader().setVisible(False)
+
+        client_header = self.client_table.horizontalHeader()
+
+        client_header.setSectionResizeMode(
+            0,
+            QHeaderView.ResizeMode.Stretch,
+        )
+
+        client_header.setSectionResizeMode(
+            1,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
+
+        layout.addSpacing(10)
+        layout.addWidget(clients_heading)
+        layout.addWidget(self.client_table, 1)
 
         return panel
 
@@ -387,6 +430,29 @@ class WifiPage(QWidget):
             )
         )
 
+        self.client_table.setRowCount(len(clients))
+
+        for row_index, client in enumerate(clients):
+            mac_address = str(
+                client.get("mac", "—")
+            )
+
+            packet_count = str(
+                client.get("packet_count", 0)
+            )
+
+            self.client_table.setItem(
+                row_index,
+                0,
+                QTableWidgetItem(mac_address),
+            )
+
+            self.client_table.setItem(
+                row_index,
+                1,
+                QTableWidgetItem(packet_count),
+            )
+
 
     def clear_network_details(self) -> None:
         """Detay panelini temizler."""
@@ -396,6 +462,8 @@ class WifiPage(QWidget):
 
             if key == "handshake":
                 label.setStyleSheet("")
+
+        self.client_table.setRowCount(0)
 
     def _create_log_panel(self) -> QFrame:
         """Canlı analiz günlüğü panelini oluşturur."""
