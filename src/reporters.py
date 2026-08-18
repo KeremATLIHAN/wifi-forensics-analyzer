@@ -7,8 +7,12 @@ from __future__ import annotations
 import csv
 import html
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from PySide6.QtGui import QTextDocument
+from PySide6.QtPrintSupport import QPrinter
 
 from src.utils import ensure_directory
 
@@ -364,3 +368,89 @@ def generate_all_reports(
     ]
 
     return created_files
+
+def export_json_report(
+    report: dict,
+    output_dir: Path,
+) -> Path:
+    """CyberLab analiz sonucunu JSON raporu olarak kaydeder."""
+
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    timestamp = datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+    output_path = (
+        output_dir
+        / f"cyberlab_report_{timestamp}.json"
+    )
+
+    payload = {
+        "product": "CyberLab",
+        "module": "Wi-Fi Forensics",
+        "generated_at": datetime.now().isoformat(
+            timespec="seconds"
+        ),
+        "report": report,
+    }
+
+    with output_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            payload,
+            file,
+            indent=4,
+            ensure_ascii=False,
+            default=str,
+        )
+
+    return output_path
+
+
+def save_pdf_report(
+    report: dict[str, Any],
+    output_file: Path,
+    capture_name: str,
+) -> Path:
+    """HTML rapor yapısını kullanarak PDF çıktısı oluşturur."""
+
+    ensure_directory(output_file.parent)
+
+    temp_html = output_file.with_suffix(".temp.html")
+
+    save_html_report(
+        report,
+        temp_html,
+        capture_name,
+    )
+
+    html_content = temp_html.read_text(
+        encoding="utf-8"
+    )
+
+    document = QTextDocument()
+    document.setHtml(html_content)
+
+    printer = QPrinter(
+        QPrinter.PrinterMode.HighResolution
+    )
+    printer.setOutputFormat(
+        QPrinter.OutputFormat.PdfFormat
+    )
+    printer.setOutputFileName(
+        str(output_file)
+    )
+
+    document.print_(printer)
+
+    temp_html.unlink(
+        missing_ok=True
+    )
+
+    return output_file

@@ -232,6 +232,8 @@ class MainWindow(QMainWindow):
             )
             return
 
+        self.wifi_page.clear_analysis_report()
+
         worker = AnalysisWorker(capture_file)
         self.active_worker = worker
 
@@ -378,6 +380,12 @@ class MainWindow(QMainWindow):
         self.wifi_page.show_security_findings(
           report.get("security_findings", [])
 )
+        self.wifi_page.set_analysis_report(
+            report
+        )
+        self.wifi_page.add_log(
+            "✓ Rapor dışa aktarmaya hazır."
+        )
 
 
     def _on_analysis_failed(

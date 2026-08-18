@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 from PySide6.QtWidgets import QScrollArea
 
@@ -13,6 +16,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QTableWidget,
@@ -23,6 +27,13 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QSplitter,
 
+)
+
+from src.config import REPORTS_DIR
+from src.reporters import (
+    save_html_report,
+    save_json_report,
+    save_pdf_report,
 )
 
 
@@ -37,22 +48,27 @@ class WifiPage(QWidget):
 
         self.selected_capture: Path | None = None
         self.summary_values: dict[str, QLabel] = {}
+        self.current_report: dict | None = None
 
         self.capture_path_input = QLineEdit()
         self.browse_button = QPushButton("Dosya Seç")
         self.analyze_button = QPushButton("Analiz Et")
+
+        self.export_button = QPushButton("Raporu Kaydet")
+        self.export_button.setEnabled(False)
+
         self.progress_bar = QProgressBar()
         self.status_label = QLabel(
             "Analiz için bir yakalama dosyası seçin."
         )
+
         self.network_table = QTableWidget()
         self.client_table = QTableWidget()
-        self.current_clients: list[dict] = []
-        self.device_detail_values: dict[str, QLabel] = {}
         self.analysis_log = QPlainTextEdit()
-        self.detail_values: dict[str, QLabel] = {}
 
-        self.findings_layout: QVBoxLayout | None = None
+        self.detail_values: dict[str, QLabel] = {}
+        self.device_detail_values: dict[str, QLabel] = {}
+        self.current_clients: list[dict] = []
 
         self._build_ui()
         self._connect_signals()
@@ -137,6 +153,9 @@ class WifiPage(QWidget):
         self.analyze_button.clicked.connect(
             self._request_analysis
         )
+        self.export_button.clicked.connect(
+            self._export_report
+        )
 
     def _create_capture_panel(self) -> QFrame:
         """Dosya seçme ve analiz başlatma panelini oluşturur."""
@@ -162,6 +181,7 @@ class WifiPage(QWidget):
         controls.addWidget(self.capture_path_input, 1)
         controls.addWidget(self.browse_button)
         controls.addWidget(self.analyze_button)
+        controls.addWidget(self.export_button)
 
         self.progress_bar.setObjectName("analysisProgress")
         self.progress_bar.setRange(0, 100)
@@ -849,3 +869,200 @@ class WifiPage(QWidget):
             card_layout.addWidget(description)
 
             self.findings_layout.addWidget(card)
+
+
+    def set_analysis_report(
+        self,
+        report: dict,
+    ) -> None:
+        """Son analiz raporunu saklar."""
+
+        self.current_report = report
+        self.export_button.setEnabled(True)
+        self.export_button.setText(
+            "Raporu Kaydet"
+        )
+
+    def clear_analysis_report(self) -> None:
+        """Önceki analiz raporunu temizler."""
+
+        self.current_report = None
+        self.export_button.setEnabled(False)
+
+    def _open_report_file(self, output_path: Path) -> None:
+        """Kaydedilen raporu uygun uygulamayla açar."""
+
+        resolved_path = output_path.resolve()
+
+        if not resolved_path.exists():
+            raise FileNotFoundError(
+                f"Dosya bulunamadı: {resolved_path}"
+            )
+
+        if sys.platform == "win32":
+            if resolved_path.suffix.lower() == ".html":
+                edge_paths = [
+                    Path(
+                        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+                    ),
+                    Path(
+                        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+                    ),
+                ]
+
+                for edge_path in edge_paths:
+                    if edge_path.exists():
+                        subprocess.Popen(
+                            [
+                                str(edge_path),
+                                str(resolved_path),
+                            ]
+                        )
+                        return
+
+            os.startfile(str(resolved_path))
+            return
+
+        if sys.platform == "darwin":
+            subprocess.Popen(
+                ["open", str(resolved_path)]
+            )
+            return
+
+        subprocess.Popen(
+            ["xdg-open", str(resolved_path)]
+        )
+
+    def _export_report(self) -> None:
+        """Mevcut analiz sonucunu seçilen formatta dışa aktarır."""
+
+        if not self.current_report:
+            self.add_log(
+                "Kaydedilecek analiz raporu bulunamadı."
+            )
+            return
+
+        capture_name = str(
+            self.current_report.get(
+                "capture_name",
+                self.selected_capture.name
+                if self.selected_capture
+                else "Bilinmeyen dosya",
+            )
+        )
+        default_name = (
+            self.selected_capture.stem
+            if self.selected_capture
+            else "cyberlab_report"
+        )
+
+        file_path, selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Raporu Kaydet",
+            str(REPORTS_DIR / default_name),
+            (
+                "PDF Raporu (*.pdf);;"
+                "HTML Raporu (*.html);;"
+                "JSON Raporu (*.json)"
+            ),
+        )
+
+        if not file_path:
+            return
+
+        output_path = Path(file_path)
+
+        try:
+            if "PDF" in selected_filter:
+                output_path = output_path.with_suffix(
+                    ".pdf"
+                )
+
+                save_pdf_report(
+                    self.current_report,
+                    output_path,
+                    capture_name,
+                )
+
+            elif "HTML" in selected_filter:
+                output_path = output_path.with_suffix(
+                    ".html"
+                )
+
+                save_html_report(
+                    self.current_report,
+                    output_path,
+                    capture_name,
+                )
+
+            else:
+                output_path = output_path.with_suffix(
+                    ".json"
+                )
+
+                save_json_report(
+                    self.current_report,
+                    output_path,
+                )
+
+            self.add_log(
+                f"✓ Rapor kaydedildi: {output_path}"
+            )
+
+            self.status_label.setText(
+                "Rapor başarıyla kaydedildi."
+            )
+
+            answer = QMessageBox.question(
+                self,
+                "Rapor Kaydedildi",
+                (
+                    "Rapor başarıyla oluşturuldu.\n\n"
+                    f"{output_path.name}\n\n"
+                    "Dosyayı şimdi görüntülemek "
+                    "ister misiniz?"
+                ),
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+
+            if answer == QMessageBox.StandardButton.Yes:
+                try:
+                    self._open_report_file(
+                        output_path
+                    )
+
+                except Exception as exc:
+                    self.add_log(
+                        f"✕ Dosya açılamadı: {exc}"
+                    )
+
+                    QMessageBox.warning(
+                        self,
+                        "Dosya Açılamadı",
+                        (
+                            "Rapor başarıyla kaydedildi ancak "
+                            "otomatik olarak açılamadı.\n\n"
+                            f"{output_path}"
+                        ),
+                    )
+
+        except Exception as exc:
+            self.add_log(
+                f"✕ Rapor oluşturulamadı: {exc}"
+            )
+
+            self.status_label.setText(
+                "Rapor oluşturulamadı."
+            )
+
+            QMessageBox.critical(
+                self,
+                "Rapor Hatası",
+                (
+                    "Rapor oluşturulurken "
+                    "bir hata meydana geldi.\n\n"
+                    f"{exc}"
+                ),
+            )
