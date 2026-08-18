@@ -648,8 +648,12 @@ class WifiPage(QWidget):
 
         fields = (
             ("mac", "MAC Adresi"),
-            ("packets", "Paket Sayısı"),
-            ("status", "Durum"),
+            ("packets", "Toplam Paket"),
+            ("sent", "Gönderilen"),
+            ("received", "Alınan"),
+            ("first_seen", "İlk Görülme"),
+            ("last_seen", "Son Görülme"),
+            ("activity", "Aktivite"),
         )
 
         for key, title in fields:
@@ -686,41 +690,60 @@ class WifiPage(QWidget):
         return panel
 
     def _on_client_selected(self) -> None:
-        """Seçilen istemcinin detaylarını gösterir."""
+            """Seçilen istemcinin detaylarını gösterir."""
 
-        row = self.client_table.currentRow()
+            row = self.client_table.currentRow()
 
-        if not 0 <= row < len(self.current_clients):
-            self.clear_device_details()
-            return
+            if not 0 <= row < len(self.current_clients):
+                self.clear_device_details()
+                return
 
-        client = self.current_clients[row]
+            client = self.current_clients[row]
 
-        mac_address = str(
-            client.get("mac", "—")
-        )
+            self.device_detail_values["mac"].setText(
+                str(client.get("mac", "—"))
+            )
 
-        packet_count = int(
-            client.get("packet_count", 0)
-        )
+            self.device_detail_values["packets"].setText(
+                str(client.get("packet_count", 0))
+            )
 
-        self.device_detail_values["mac"].setText(
-            mac_address
-        )
+            self.device_detail_values["sent"].setText(
+                str(client.get("sent_packets", 0))
+            )
 
-        self.device_detail_values["packets"].setText(
-            str(packet_count)
-        )
+            self.device_detail_values["received"].setText(
+                str(client.get("received_packets", 0))
+            )
 
-        self.device_detail_values["status"].setText(
-            "● Aktif"
-        )
+            self.device_detail_values["first_seen"].setText(
+                str(client.get("first_seen", "—"))
+            )
 
-        self.device_detail_values[
-            "status"
-        ].setStyleSheet(
-            "color: #34D399; font-weight: 700;"
-        )
+            self.device_detail_values["last_seen"].setText(
+                str(client.get("last_seen", "—"))
+            )
+
+            activity = str(
+                client.get("activity_level", "Düşük")
+            )
+
+            self.device_detail_values["activity"].setText(
+                f"● {activity}"
+            )
+
+            activity_colors = {
+                "Düşük": "#94A3B8",
+                "Orta": "#FBBF24",
+                "Yüksek": "#34D399",
+            }
+
+            self.device_detail_values[
+                "activity"
+            ].setStyleSheet(
+                f"color: {activity_colors.get(activity, '#94A3B8')}; "
+                "font-weight: 700;"
+            )
 
     def clear_device_details(self) -> None:
         """Cihaz detay panelini temizler."""

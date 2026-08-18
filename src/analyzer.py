@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from typing import Any, Iterable
 
 from src.utils import decode_ssid, first_value, is_valid_mac, normalize_mac
+from datetime import datetime
 
 
 FRAME_SUBTYPE_NAMES = {
@@ -78,11 +79,21 @@ def analyze_packets(
 
     eapol_details: list[dict[str, str]] = []
 
+    client_first_seen: dict[str, dict[str, float]] = defaultdict(dict)
+    client_last_seen: dict[str, dict[str, float]] = defaultdict(dict)
+
+    client_sent_counts: dict[str, Counter[str]] = defaultdict(Counter)
+    client_received_counts: dict[str, Counter[str]] = defaultdict(Counter)
+
     for packet in packets:
         total_packets += 1
 
         frame_number = first_value(packet.get("frame_number", ""))
         timestamp = first_value(packet.get("timestamp", ""))
+        try:
+            timestamp_value = float(timestamp)
+        except (TypeError, ValueError):
+            timestamp_value = None
         frame_subtype = first_value(packet.get("frame_subtype", ""))
 
         source = normalize_mac(
@@ -136,6 +147,18 @@ def analyze_packets(
                     continue
 
                 clients_by_bssid[bssid][mac_address] += 1
+
+                if timestamp_value is not None:
+                    if mac_address not in client_first_seen[bssid]:
+                        client_first_seen[bssid][mac_address] = timestamp_value
+
+                    client_last_seen[bssid][mac_address] = timestamp_value
+
+                if mac_address == source:
+                    client_sent_counts[bssid][mac_address] += 1
+
+                if mac_address == destination:
+                    client_received_counts[bssid][mac_address] += 1
 
         if eapol_type:
             eapol_packets += 1
@@ -195,13 +218,37 @@ def analyze_packets(
                 "channel": primary_channel,
                 "average_signal_dbm": average_signal,
                 "clients": [
-                    {
-                        "mac": mac,
-                        "packet_count": packet_count,
-                    }
-                    for mac, packet_count
-                    in clients.most_common()
-                ],
+                        {
+                            "mac": mac,
+                            "packet_count": packet_count,
+                            "sent_packets": client_sent_counts[bssid][mac],
+                            "received_packets": client_received_counts[bssid][mac],
+                            "first_seen": (
+                                datetime.fromtimestamp(
+                                    client_first_seen[bssid][mac]
+                                ).strftime("%H:%M:%S")
+                                if mac in client_first_seen[bssid]
+                                else "—"
+                            ),
+                            "last_seen": (
+                                datetime.fromtimestamp(
+                                    client_last_seen[bssid][mac]
+                                ).strftime("%H:%M:%S")
+                                if mac in client_last_seen[bssid]
+                                else "—"
+                            ),
+                            "activity_level": (
+                                "Yüksek"
+                                if packet_count >= 1000
+                                else "Orta"
+                                if packet_count >= 250
+                                else "Düşük"
+                            ),
+                        }
+                        for mac, packet_count
+                        in clients.most_common()
+                    ],
+                
             }
         )
 
