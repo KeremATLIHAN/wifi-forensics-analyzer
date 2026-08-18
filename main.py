@@ -90,6 +90,8 @@ def format_ssids(ssids: list[str]) -> str:
 def print_summary(
     report: dict[str, Any],
     client_limit: int,
+    args: argparse.Namespace,
+    capture_file: Path,
 ) -> None:
     """Analiz raporunu terminalde gösterir."""
 
@@ -289,6 +291,8 @@ def main() -> int:
         print_summary(
             report,
             max(args.show_clients, 0),
+            args,
+            capture_file,
         )
 
         return 0
