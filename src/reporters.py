@@ -11,9 +11,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtGui import QTextDocument
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QImage, QTextDocument
 from PySide6.QtPrintSupport import QPrinter
 
+from src.config import PROJECT_ROOT
 from src.utils import ensure_directory
 
 
@@ -123,38 +125,44 @@ def save_html_report(
     output_file: Path,
     capture_name: str,
 ) -> Path:
-    """Okunabilir bir HTML analiz raporu oluşturur."""
+    """Okunabilir ve markalı bir HTML analiz raporu oluşturur."""
 
     ensure_directory(output_file.parent)
 
-    network_rows = []
+    network_rows: list[str] = []
 
-    for network in report["networks"]:
+    for network in report.get("networks", []):
         ssid_text = (
-            ", ".join(network["ssids"])
-            if network["ssids"]
+            ", ".join(network.get("ssids", []))
+            if network.get("ssids")
             else "SSID belirlenemedi"
         )
 
         channel = (
-            network["channel"]
-            if network["channel"] is not None
+            network.get("channel")
+            if network.get("channel") is not None
             else "Bilinmiyor"
         )
 
+        signal_value = network.get("average_signal_dbm")
         signal = (
-            f"{network['average_signal_dbm']} dBm"
-            if network["average_signal_dbm"] is not None
+            f"{signal_value} dBm"
+            if signal_value is not None
             else "Bilinmiyor"
         )
 
-        client_rows = []
+        client_rows: list[str] = []
 
-        for client in network["clients"][:25]:
+        for client in network.get("clients", [])[:25]:
             client_rows.append(
                 "<tr>"
-                f"<td>{html.escape(client['mac'])}</td>"
-                f"<td>{client['packet_count']}</td>"
+                f"<td>{html.escape(str(client.get('mac', '—')))}</td>"
+                f"<td>{html.escape(str(client.get('packet_count', 0)))}</td>"
+                f"<td>{html.escape(str(client.get('sent_packets', 0)))}</td>"
+                f"<td>{html.escape(str(client.get('received_packets', 0)))}</td>"
+                f"<td>{html.escape(str(client.get('first_seen', '—')))}</td>"
+                f"<td>{html.escape(str(client.get('last_seen', '—')))}</td>"
+                f"<td>{html.escape(str(client.get('activity_level', '—')))}</td>"
                 "</tr>"
             )
 
@@ -162,10 +170,23 @@ def save_html_report(
             "<table>"
             "<thead><tr>"
             "<th>İstemci MAC</th>"
-            "<th>Paket sayısı</th>"
+            "<th>Toplam Paket</th>"
+            "<th>Gönderilen</th>"
+            "<th>Alınan</th>"
+            "<th>İlk Görülme</th>"
+            "<th>Son Görülme</th>"
+            "<th>Aktivite</th>"
             "</tr></thead>"
             "<tbody>"
-            + "".join(client_rows)
+            + (
+                "".join(client_rows)
+                if client_rows
+                else (
+                    "<tr><td colspan='7'>"
+                    "Bu ağ için istemci gözlemlenmedi."
+                    "</td></tr>"
+                )
+            )
             + "</tbody>"
             "</table>"
         )
@@ -174,155 +195,540 @@ def save_html_report(
             "<section class='network-card'>"
             f"<h3>{html.escape(ssid_text)}</h3>"
             "<dl>"
-            f"<dt>BSSID</dt><dd>{html.escape(network['bssid'])}</dd>"
+            f"<dt>BSSID</dt><dd>{html.escape(str(network.get('bssid', '—')))}</dd>"
             f"<dt>Kanal</dt><dd>{html.escape(str(channel))}</dd>"
             f"<dt>Ortalama sinyal</dt><dd>{html.escape(signal)}</dd>"
-            f"<dt>İstemci adayı</dt><dd>{len(network['clients'])}</dd>"
+            f"<dt>İstemci sayısı</dt><dd>{len(network.get('clients', []))}</dd>"
             "</dl>"
             f"{clients_table}"
             "</section>"
         )
 
-    subtype_rows = []
+    subtype_rows: list[str] = []
 
-    for subtype, count in report["frame_subtypes"].items():
+    for subtype, count in report.get("frame_subtypes", {}).items():
         subtype_rows.append(
             "<tr>"
-            f"<td>{html.escape(subtype)}</td>"
-            f"<td>{count}</td>"
+            f"<td>{html.escape(str(subtype))}</td>"
+            f"<td>{html.escape(str(count))}</td>"
             "</tr>"
         )
+
+    generated_at = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+
+    findings = report.get("security_findings", [])
+    finding_rows: list[str] = []
+
+    severity_map = {
+        "critical": ("KRİTİK", "#ef4444"),
+        "warning": ("UYARI", "#f59e0b"),
+        "success": ("BAŞARILI", "#10b981"),
+        "info": ("BİLGİ", "#3b82f6"),
+    }
+
+    for finding in findings:
+        severity = str(finding.get("severity", "info"))
+
+        label, color = severity_map.get(
+            severity,
+            ("BİLGİ", "#3b82f6"),
+        )
+
+        title = html.escape(
+            str(finding.get("title", "Bulgu"))
+        )
+
+        description = html.escape(
+            str(finding.get("description", ""))
+        )
+
+        finding_rows.append(
+            f"""
+            <div class="finding">
+                <div
+                    class="finding-indicator"
+                    style="background:{color};"
+                ></div>
+
+                <div class="finding-content">
+                    <div class="finding-header">
+                        <span
+                            class="finding-badge"
+                            style="
+                                color:{color};
+                                border-color:{color};
+                            "
+                        >
+                            {label}
+                        </span>
+
+                        <strong>{title}</strong>
+                    </div>
+
+                    <p>{description}</p>
+                </div>
+            </div>
+            """
+        )
+
+    findings_html = (
+        "".join(finding_rows)
+        if finding_rows
+        else """
+        <div class="finding">
+            <div
+                class="finding-indicator"
+                style="background:#10b981;"
+            ></div>
+
+            <div class="finding-content">
+                <div class="finding-header">
+                    <span
+                        class="finding-badge"
+                        style="
+                            color:#10b981;
+                            border-color:#10b981;
+                        "
+                    >
+                        BİLGİ
+                    </span>
+
+                    <strong>
+                        Ek güvenlik bulgusu bulunamadı
+                    </strong>
+                </div>
+
+                <p>
+                    Analiz motoru bu yakalama için
+                    ek bir güvenlik bulgusu üretmedi.
+                </p>
+            </div>
+        </div>
+        """
+    )
 
     document = f"""<!doctype html>
 <html lang="tr">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Wi-Fi Forensics Raporu</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <title>CyberLab Wi-Fi Forensics Report</title>
+
     <style>
+        * {{
+            box-sizing: border-box;
+        }}
+
         body {{
-            font-family: Arial, sans-serif;
             margin: 0;
-            background: #f4f6f8;
-            color: #1f2933;
+            padding: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+            font-family: "Segoe UI", Arial, sans-serif;
         }}
 
         main {{
             max-width: 1100px;
             margin: 0 auto;
-            padding: 32px 20px;
+            padding: 36px 24px 60px;
         }}
 
-        h1, h2, h3 {{
-            margin-top: 0;
+        .report-header {{
+            background: #0f172a;
+            color: #ffffff;
+            padding: 32px;
+            border: 1px solid #1e293b;
+            border-radius: 14px;
+            margin-bottom: 24px;
+        }}
+
+        .brand {{
+            color: #2dd4bf;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }}
+
+        .report-header h1 {{
+            margin: 0 0 8px;
+            font-size: 30px;
+            font-weight: 800;
+        }}
+
+        .report-header > p {{
+            margin: 0;
+            color: #cbd5e1;
+            font-size: 14px;
+        }}
+
+        .metadata {{
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+        }}
+
+        .metadata-item {{
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #f8fafc;
+        }}
+
+        .metadata-label {{
+            display: block;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }}
 
         .summary {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
-            margin-bottom: 28px;
+            margin-bottom: 30px;
         }}
 
-        .summary-card,
-        .network-card {{
-            background: white;
-            border-radius: 10px;
+        .summary-card {{
+            background: #ffffff;
+            border: 1px solid #dbe3ec;
+            border-radius: 12px;
             padding: 18px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }}
 
-        .summary-card strong {{
+        .summary-label {{
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+        }}
+
+        .summary-value {{
             display: block;
+            color: #0f172a;
             font-size: 28px;
+            font-weight: 800;
             margin-top: 8px;
         }}
 
+        .report-section {{
+            margin-top: 30px;
+        }}
+
+        .section-title {{
+            color: #0f172a;
+            font-size: 19px;
+            font-weight: 800;
+            margin: 0 0 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2dd4bf;
+        }}
+
+        .finding {{
+            display: grid;
+            grid-template-columns: 5px 1fr;
+            gap: 14px;
+            background: #ffffff;
+            border: 1px solid #dbe3ec;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }}
+
+        .finding-indicator {{
+            border-radius: 5px;
+        }}
+
+        .finding-content {{
+            min-width: 0;
+        }}
+
+        .finding-header {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+
+        .finding-header strong {{
+            color: #0f172a;
+        }}
+
+        .finding-badge {{
+            display: inline-block;
+            border: 1px solid;
+            border-radius: 5px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 800;
+        }}
+
+        .finding p {{
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+        }}
+
         .network-card {{
-            margin-bottom: 20px;
+            background: #ffffff;
+            border: 1px solid #dbe3ec;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }}
+
+        .network-card h3 {{
+            color: #0f172a;
+            margin: 0 0 14px;
+            font-size: 17px;
         }}
 
         dl {{
             display: grid;
             grid-template-columns: 180px 1fr;
             gap: 8px 16px;
+            margin: 0;
         }}
 
         dt {{
-            font-weight: bold;
+            color: #64748b;
+            font-weight: 600;
         }}
 
         dd {{
             margin: 0;
+            color: #0f172a;
+            font-weight: 600;
         }}
 
         table {{
             width: 100%;
             border-collapse: collapse;
-            margin-top: 16px;
-        }}
-
-        th, td {{
-            text-align: left;
-            border-bottom: 1px solid #d9e2ec;
-            padding: 9px;
+            margin-top: 14px;
+            background: #ffffff;
         }}
 
         th {{
-            background: #e9eef3;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
         }}
 
-        .warning {{
-            background: #fff4d6;
-            border-left: 5px solid #d9a400;
-            padding: 14px;
-            margin-bottom: 24px;
+        th,
+        td {{
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 9px 10px;
+        }}
+
+        td {{
+            color: #334155;
+        }}
+
+        .empty-state {{
+            background: #ffffff;
+            border: 1px solid #dbe3ec;
+            border-radius: 10px;
+            padding: 16px;
+            color: #64748b;
+        }}
+
+        .disclaimer {{
+            margin-top: 36px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }}
+
+        .disclaimer strong {{
+            color: #334155;
+        }}
+
+        footer {{
+            margin-top: 28px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 11px;
+        }}
+
+        @media (max-width: 700px) {{
+            .summary {{
+                grid-template-columns: 1fr;
+            }}
+
+            .metadata {{
+                grid-template-columns: 1fr;
+            }}
+
+            dl {{
+                grid-template-columns: 1fr;
+            }}
+
+            main {{
+                padding: 18px 12px 40px;
+            }}
+
+            .report-header {{
+                padding: 22px;
+            }}
+
+            .report-header h1 {{
+                font-size: 24px;
+            }}
         }}
     </style>
 </head>
+
 <body>
 <main>
-    <h1>Wi-Fi Forensics Analyzer</h1>
-    <p><strong>Yakalama dosyası:</strong> {html.escape(capture_name)}</p>
+
+    <header class="report-header">
+        <div class="brand">
+            CYBERLAB
+        </div>
+
+        <h1>
+            Wi-Fi Forensics Analysis Report
+        </h1>
+
+        <p>
+            Kablosuz ağ yakalama dosyası analiz raporu
+        </p>
+
+        <div class="metadata">
+            <div class="metadata-item">
+                <span class="metadata-label">
+                    Yakalama Dosyası
+                </span>
+                {html.escape(capture_name)}
+            </div>
+
+            <div class="metadata-item">
+                <span class="metadata-label">
+                    Rapor Tarihi
+                </span>
+                {generated_at}
+            </div>
+
+            <div class="metadata-item">
+                <span class="metadata-label">
+                    Analiz Modülü
+                </span>
+                Wi-Fi Forensics
+            </div>
+        </div>
+    </header>
 
     <div class="summary">
         <div class="summary-card">
-            Toplam paket
-            <strong>{report['total_packets']}</strong>
+            <span class="summary-label">
+                Toplam Paket
+            </span>
+            <strong class="summary-value">
+                {report.get("total_packets", 0)}
+            </strong>
         </div>
 
         <div class="summary-card">
-            Görülen BSSID
-            <strong>{report['network_count']}</strong>
+            <span class="summary-label">
+                Tespit Edilen Ağ
+            </span>
+            <strong class="summary-value">
+                {report.get("network_count", 0)}
+            </strong>
         </div>
 
         <div class="summary-card">
-            EAPOL paketi
-            <strong>{report['eapol_packet_count']}</strong>
+            <span class="summary-label">
+                EAPOL Paketleri
+            </span>
+            <strong class="summary-value">
+                {report.get("eapol_packet_count", 0)}
+            </strong>
         </div>
     </div>
 
-    {
-        "<div class='warning'>EAPOL paketi tespit edilmedi.</div>"
-        if report["eapol_packet_count"] == 0
-        else ""
-    }
+    <section class="report-section">
+        <h2 class="section-title">
+            Security Findings
+        </h2>
+        {findings_html}
+    </section>
 
-    <h2>Tespit edilen ağlar</h2>
-    {''.join(network_rows) if network_rows else '<p>Ağ bulunamadı.</p>'}
+    <section class="report-section">
+        <h2 class="section-title">
+            Tespit Edilen Ağlar
+        </h2>
 
-    <h2>802.11 çerçeve alt tipleri</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Alt tip</th>
-                <th>Sayı</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(subtype_rows)}
-        </tbody>
-    </table>
+        {
+            "".join(network_rows)
+            if network_rows
+            else (
+                '<div class="empty-state">'
+                'Analiz sonucunda kablosuz ağ '
+                'tespit edilmedi.'
+                '</div>'
+            )
+        }
+    </section>
+
+    <section class="report-section">
+        <h2 class="section-title">
+            802.11 Frame Analysis
+        </h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Frame Alt Tipi</th>
+                    <th>Paket Sayısı</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {
+                    "".join(subtype_rows)
+                    if subtype_rows
+                    else (
+                        "<tr>"
+                        "<td colspan='2'>"
+                        "Frame alt tipi verisi bulunamadı."
+                        "</td>"
+                        "</tr>"
+                    )
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <div class="disclaimer">
+        <strong>
+            Analiz Notu:
+        </strong>
+
+        Bu rapor, yakalama dosyasında gözlemlenen
+        veriler üzerinden otomatik olarak oluşturulmuştur.
+        Bir bulgunun raporda bulunmaması,
+        ilgili güvenlik olayının gerçekleşmediğini
+        tek başına kanıtlamaz.
+    </div>
+
+    <footer>
+        Generated by CyberLab Desktop Security Suite
+    </footer>
+
 </main>
 </body>
 </html>
@@ -418,7 +824,7 @@ def save_pdf_report(
     output_file: Path,
     capture_name: str,
 ) -> Path:
-    """HTML rapor yapısını kullanarak PDF çıktısı oluşturur."""
+    """HTML rapor yapısını baskıya uygun stillerle PDF'e dönüştürür."""
 
     ensure_directory(output_file.parent)
 
@@ -434,20 +840,128 @@ def save_pdf_report(
         encoding="utf-8"
     )
 
+    pdf_css = """
+    <style>
+        body {
+            background: #ffffff !important;
+            color: #1e293b !important;
+        }
+
+        main {
+            max-width: none !important;
+            padding: 18px !important;
+        }
+
+        .report-header {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border: 2px solid #2dd4bf !important;
+            border-radius: 8px !important;
+            padding: 22px !important;
+        }
+
+        .report-header h1 {
+            color: #0f172a !important;
+        }
+
+        .report-header > p {
+            color: #475569 !important;
+        }
+
+        .metadata-item {
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+
+        .metadata-label {
+            color: #64748b !important;
+        }
+
+        .summary-card,
+        .finding,
+        .network-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            box-shadow: none !important;
+        }
+
+        table {
+            page-break-inside: auto;
+        }
+
+        tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        th {
+            background: #f1f5f9 !important;
+            color: #334155 !important;
+        }
+    </style>
+    """
+
+    html_content = html_content.replace(
+        "</head>",
+        pdf_css + "</head>",
+    )
+
     document = QTextDocument()
-    document.setHtml(html_content)
+
+    # Gerçek CyberLab logosunu PDF kaynağı olarak ekle.
+    logo_path = (
+        PROJECT_ROOT
+        / "resources"
+        / "logo"
+        / "cyberlab_logo.png"
+    )
+
+    if logo_path.exists():
+        logo_image = QImage(
+            str(logo_path)
+        )
+
+        document.addResource(
+            QTextDocument.ResourceType.ImageResource,
+            QUrl("cyberlab-logo"),
+            logo_image,
+        )
+
+        logo_html = """
+        <div style="
+            margin-bottom: 14px;
+        ">
+            <img
+                src="cyberlab-logo"
+                width="150"
+            >
+        </div>
+        """
+
+        html_content = html_content.replace(
+            '<div class="brand">\n            CYBERLAB\n        </div>',
+            logo_html,
+        )
+
+    document.setHtml(
+        html_content
+    )
 
     printer = QPrinter(
         QPrinter.PrinterMode.HighResolution
     )
+
     printer.setOutputFormat(
         QPrinter.OutputFormat.PdfFormat
     )
+
     printer.setOutputFileName(
         str(output_file)
     )
 
-    document.print_(printer)
+    document.print_(
+        printer
+    )
 
     temp_html.unlink(
         missing_ok=True
