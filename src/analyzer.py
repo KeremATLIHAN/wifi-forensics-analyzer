@@ -252,11 +252,95 @@ def analyze_packets(
             }
         )
 
+    findings: list[dict[str, str]] = []
+
+    if not networks:
+        findings.append(
+            {
+                "severity": "warning",
+                "title": "Kablosuz ağ bulunamadı",
+                "description": (
+                    "Yakalama içerisinde analiz edilebilir bir BSSID bulunamadı."
+                ),
+            }
+        )
+    else:
+        findings.append(
+            {
+                "severity": "info",
+                "title": "Kablosuz ağlar tespit edildi",
+                "description": (
+                    f"Toplam {len(networks)} farklı ağ gözlemlendi."
+                ),
+            }
+        )
+
+    all_clients = [
+        client
+        for network in networks
+        for client in network.get("clients", [])
+    ]
+
+    high_activity_clients = [
+        client
+        for client in all_clients
+        if client.get("activity_level") == "Yüksek"
+    ]
+
+    if high_activity_clients:
+        findings.append(
+            {
+                "severity": "info",
+                "title": "Yoğun istemci aktivitesi",
+                "description": (
+                    f"{len(high_activity_clients)} istemci yüksek "
+                    "paket aktivitesi gösteriyor."
+                ),
+            }
+        )
+
+    missing_channel_networks = [
+        network
+        for network in networks
+        if network.get("channel") is None
+    ]
+
+    if missing_channel_networks:
+        findings.append(
+            {
+                "severity": "warning",
+                "title": "Kanal bilgisi eksik",
+                "description": (
+                    f"{len(missing_channel_networks)} ağ için kanal bilgisi "
+                    "yakalama dosyasından alınamadı."
+                ),
+            }
+        )
+
+    missing_signal_networks = [
+        network
+        for network in networks
+        if network.get("average_signal_dbm") is None
+    ]
+
+    if missing_signal_networks:
+        findings.append(
+            {
+                "severity": "warning",
+                "title": "Sinyal bilgisi eksik",
+                "description": (
+                    f"{len(missing_signal_networks)} ağ için sinyal seviyesi "
+                    "bulunamadı."
+                ),
+            }
+        )
+
     return {
         "total_packets": total_packets,
         "network_count": len(networks),
         "eapol_packet_count": eapol_packets,
         "networks": networks,
+        "security_findings": findings,
         "frame_subtypes": dict(
             subtype_counts.most_common()
         ),

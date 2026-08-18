@@ -52,6 +52,8 @@ class WifiPage(QWidget):
         self.analysis_log = QPlainTextEdit()
         self.detail_values: dict[str, QLabel] = {}
 
+        self.findings_layout: QVBoxLayout | None = None
+
         self._build_ui()
         self._connect_signals()
 
@@ -111,6 +113,8 @@ class WifiPage(QWidget):
         clients_section.setMinimumHeight(260)
 
         layout.addWidget(clients_section)
+
+        layout.addWidget(self._create_findings_panel())
 
         log_panel = self._create_log_panel()
         log_panel.setMinimumHeight(160)
@@ -751,3 +755,97 @@ class WifiPage(QWidget):
         for label in self.device_detail_values.values():
             label.setText("—")
             label.setStyleSheet("")
+
+    def _create_findings_panel(self) -> QFrame:
+        """Security Findings panelini oluşturur."""
+
+        panel = QFrame()
+        panel.setObjectName("contentCard")
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
+
+        heading = QLabel("Security Findings")
+        heading.setObjectName("sectionTitle")
+
+        layout.addWidget(heading)
+
+        self.findings_layout = QVBoxLayout()
+        self.findings_layout.setSpacing(8)
+
+        placeholder = QLabel(
+            "Analiz tamamlandığında güvenlik bulguları burada gösterilecek."
+        )
+        placeholder.setObjectName("findingDescription")
+        placeholder.setWordWrap(True)
+
+        self.findings_layout.addWidget(placeholder)
+
+        layout.addLayout(self.findings_layout)
+
+        return panel
+
+
+    def show_security_findings(
+        self,
+        findings: list[dict[str, str]],
+    ) -> None:
+        """Analiz bulgularını kullanıcıya gösterir."""
+
+        if self.findings_layout is None:
+            return
+
+        while self.findings_layout.count():
+            item = self.findings_layout.takeAt(0)
+            widget = item.widget()
+
+            if widget is not None:
+                widget.deleteLater()
+
+        if not findings:
+            label = QLabel(
+                "Analiz sonucunda ek bir güvenlik bulgusu üretilmedi."
+            )
+            label.setWordWrap(True)
+            self.findings_layout.addWidget(label)
+            return
+
+        severity_styles = {
+            "success": ("#34D399", "✓"),
+            "warning": ("#FBBF24", "⚠"),
+            "info": ("#60A5FA", "●"),
+            "critical": ("#F87171", "✕"),
+        }
+
+        for finding in findings:
+            severity = finding.get("severity", "info")
+            color, symbol = severity_styles.get(
+                severity,
+                ("#94A3B8", "●"),
+            )
+
+            card = QFrame()
+            card.setObjectName("findingCard")
+
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(14, 10, 14, 10)
+            card_layout.setSpacing(4)
+
+            title = QLabel(
+                f"{symbol} {finding.get('title', 'Bulgu')}"
+            )
+            title.setStyleSheet(
+                f"color: {color}; font-weight: 700;"
+            )
+
+            description = QLabel(
+                finding.get("description", "")
+            )
+            description.setObjectName("findingDescription")
+            description.setWordWrap(True)
+
+            card_layout.addWidget(title)
+            card_layout.addWidget(description)
+
+            self.findings_layout.addWidget(card)

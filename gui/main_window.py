@@ -375,6 +375,10 @@ class MainWindow(QMainWindow):
             len(networks),
         )
 
+        self.wifi_page.show_security_findings(
+          report.get("security_findings", [])
+)
+
 
     def _on_analysis_failed(
         self,

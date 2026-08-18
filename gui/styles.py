@@ -287,4 +287,15 @@ QScrollBar::add-line:vertical,
 QScrollBar::sub-line:vertical {
     height: 0px;
 }
+
+QFrame#findingCard {
+    background-color: transparent;
+    border: 1px solid #34445D;
+    border-radius: 9px;
+}
+
+QLabel#findingDescription {
+    color: #CBD5E1;
+    font-size: 12px;
+}
 """
