@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from PySide6.QtWidgets import QScrollArea
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import (
@@ -57,7 +58,16 @@ class WifiPage(QWidget):
     def _build_ui(self) -> None:
         """Wi-Fi Forensics sayfasını oluşturur."""
 
-        layout = QVBoxLayout(self)
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        content = QWidget()
+        layout = QVBoxLayout(content)
+
         layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(16)
 
@@ -79,38 +89,40 @@ class WifiPage(QWidget):
         results_splitter = QSplitter(
             Qt.Orientation.Horizontal
         )
-
-        results_splitter.setObjectName(
-            "resultsSplitter"
-        )
-
+        results_splitter.setObjectName("resultsSplitter")
         results_splitter.setChildrenCollapsible(False)
 
-        results_splitter.addWidget(
-            self._create_networks_panel()
-        )
+        networks_panel = self._create_networks_panel()
+        details_panel = self._create_network_details_panel()
 
-        results_splitter.addWidget(
-            self._create_network_details_panel()
-        )
+        networks_panel.setMinimumHeight(280)
+        details_panel.setMinimumHeight(280)
+
+        results_splitter.addWidget(networks_panel)
+        results_splitter.addWidget(details_panel)
 
         results_splitter.setStretchFactor(0, 3)
         results_splitter.setStretchFactor(1, 2)
+        results_splitter.setSizes([700, 420])
 
-        results_splitter.setSizes(
-            [700, 420]
-        )
+        layout.addWidget(results_splitter)
 
-        layout.addWidget(results_splitter, 2)
+        clients_section = self._create_clients_section()
+        clients_section.setMinimumHeight(260)
 
-        layout.addWidget(
-        self._create_clients_section(),
-        1,
-        )
-       
-        layout.addWidget(self._create_log_panel())
+        layout.addWidget(clients_section)
+
+        log_panel = self._create_log_panel()
+        log_panel.setMinimumHeight(160)
+
+        layout.addWidget(log_panel)
+
         self.status_label.setObjectName("moduleStatus")
         layout.addWidget(self.status_label)
+
+        scroll_area.setWidget(content)
+
+        outer_layout.addWidget(scroll_area)
 
     def _connect_signals(self) -> None:
         """Sayfadaki düğmelerin olaylarını bağlar."""
@@ -478,7 +490,7 @@ class WifiPage(QWidget):
 
         panel = QFrame()
         panel.setObjectName("contentCard")
-        panel.setMaximumHeight(170)
+        panel.setMinimumHeight(160)
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(18, 14, 18, 14)
