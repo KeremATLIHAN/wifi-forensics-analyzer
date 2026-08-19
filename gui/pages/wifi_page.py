@@ -1578,6 +1578,28 @@ class WifiPage(QWidget):
                 f"{titles[severity]}  0"
             )
 
+    def _get_available_output_path(
+        self,
+        output_path: Path,
+    ) -> Path:
+        """Dosya mevcut veya kilitliyse yeni bir dosya adı üretir."""
+
+        if not output_path.exists():
+            return output_path
+
+        stem = output_path.stem
+        suffix = output_path.suffix
+        parent = output_path.parent
+        counter = 1
+
+        while True:
+            candidate = parent / f"{stem}_{counter}{suffix}"
+
+            if not candidate.exists():
+                return candidate
+
+            counter += 1
+
     def _open_report_file(self, output_path: Path) -> None:
         """Kaydedilen raporu uygun uygulamayla açar."""
 
@@ -1666,6 +1688,9 @@ class WifiPage(QWidget):
                 output_path = output_path.with_suffix(
                     ".pdf"
                 )
+                output_path = self._get_available_output_path(
+                    output_path
+                )
 
                 save_pdf_report(
                     self.current_report,
@@ -1677,6 +1702,9 @@ class WifiPage(QWidget):
                 output_path = output_path.with_suffix(
                     ".html"
                 )
+                output_path = self._get_available_output_path(
+                    output_path
+                )
 
                 save_html_report(
                     self.current_report,
@@ -1687,6 +1715,9 @@ class WifiPage(QWidget):
             else:
                 output_path = output_path.with_suffix(
                     ".json"
+                )
+                output_path = self._get_available_output_path(
+                    output_path
                 )
 
                 save_json_report(
