@@ -1,96 +1,224 @@
-# WiFi Forensics Analyzer
+# CyberLab
 
-![Python](https://img.shields.io/badge/Python-3.13-blue)
-![Platform](https://img.shields.io/badge/Linux-Kali-success)
-![License](https://img.shields.io/badge/License-Educational-lightgrey)
+### Desktop Wi-Fi Forensics & Security Analysis Suite
 
-A modular Python application for analyzing Wi-Fi capture files
-(.cap, .pcap, .pcapng) in educational and authorized laboratory environments.
+CyberLab is a desktop Wi-Fi forensic analysis application designed for educational, laboratory, and authorized security analysis environments.
 
----
+It analyzes `.cap`, `.pcap`, and `.pcapng` capture files through TShark and presents network, client, handshake, security, and traffic information through a PySide6 desktop interface.
 
-# Features
-
-✔ CAP / PCAP / PCAPNG support
-
-✔ Automatic TShark field detection
-
-✔ SSID decoding
-
-✔ BSSID discovery
-
-✔ Client discovery
-
-✔ Channel analysis
-
-✔ 802.11 Management Frame Analysis
-
-✔ EAPOL detection
-
-✔ JSON reports
-
-✔ CSV reports
-
-✔ HTML reports
+> **Version:** 1.0.0
 
 ---
 
-# Planned Features
+## Features
 
-- OUI Vendor Detection
-- RSSI Graphs
-- Channel Utilization
-- Hidden SSID Detection
-- Beacon Statistics
-- Probe Analysis
-- Device Timeline
-- SQLite Database
-- Flask Dashboard
-- PDF Reports
+### Wi-Fi Forensics
+
+- CAP / PCAP / PCAPNG capture support
+- TShark-based packet analysis
+- SSID and BSSID discovery
+- Wi-Fi channel detection
+- Client device discovery
+- Signal level analysis
+- 802.11 frame subtype analysis
+- EAPOL packet detection
+
+### Device Intelligence
+
+- Offline OUI / Vendor detection
+- Client MAC address analysis
+- Private / Randomized MAC detection
+- Sent / received packet statistics
+- Client activity analysis
+- First / last seen information
+
+### Handshake Analysis
+
+CyberLab includes an EAPOL analysis engine for identifying Wi-Fi handshake candidates.
+
+- EAPOL candidate detection
+- Client / BSSID association
+- Partial handshake identification
+- Strong handshake candidate identification
+- Detailed handshake inspection
+
+Handshake findings indicate evidence observed in the capture and should not be interpreted as proof of unauthorized activity.
+
+### Security Findings v2
+
+The analysis engine automatically generates structured forensic observations.
+
+Finding categories include:
+
+- Handshake
+- Privacy
+- Wireless
+- Signal
+- Activity
+- Device
+
+Severity levels:
+
+- Critical
+- Warning
+- Info
+- Success
+
+CyberLab intentionally distinguishes forensic observations from security conclusions. For example, high packet activity or weak signal strength alone is not classified as an attack.
+
+### Search & Filtering
+
+Network and client tables support real-time filtering.
+
+Networks can be searched by:
+
+- SSID
+- BSSID
+
+Clients can be searched by:
+
+- MAC address
+- Vendor
+
+### Analytics Dashboard
+
+CyberLab provides lightweight Qt-based analytics without external plotting frameworks.
+
+Current analytics include:
+
+- Top active client devices
+- Wi-Fi network signal levels
+- 802.11 frame subtype distribution
+
+### Reporting
+
+Analysis results can be exported as:
+
+- PDF
+- HTML
+- JSON
+
+PDF reports are generated using ReportLab and include:
+
+- Analysis summary
+- Security findings
+- Detected networks
+- Client activity
+- Vendor information
+- Signal information
+- 802.11 frame analysis
+- Repeated table headers
+- Automatic pagination
+- Page numbers
 
 ---
 
-# Project Structure
+## Desktop Interface
 
-wifi_forensics_analyzer/
+CyberLab uses PySide6 / Qt for its desktop interface.
 
-captures/
+The application includes:
 
-reports/
-
-src/
-
-README.md
-
-requirements.txt
-
-main.py
+- Splash screen
+- Dashboard
+- Wi-Fi Forensics workspace
+- Responsive scrollable layout
+- Network details
+- Client device tables
+- Handshake details
+- Security Findings dashboard
+- Analytics
+- Report export
 
 ---
 
-# Installation
+## Requirements
+
+### Windows
+
+- Windows 10 / 11
+- Python 3
+- TShark / Wireshark
+- PySide6
+- ReportLab
+
+### Linux / Kali Linux
+
+The analysis engine can also be executed in compatible Linux environments with TShark installed.
+
+---
+
+## Installation From Source
+
+Clone the repository:
 
 ```bash
-git clone <repository>
+git clone https://github.com/KeremATLIHAN/wifi-forensics-analyzer.git
+cd wifi-forensics-analyzer
+```
 
-cd wifi_forensics_analyzer
+Create a virtual environment.
 
+### Windows
+
+```powershell
 python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
+### Linux
+
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
+```
 
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Install TShark
+---
+
+## TShark
+
+CyberLab uses TShark as its packet-analysis backend.
+
+### Windows
+
+Install Wireshark and make sure TShark is available on the system.
+
+Verify:
+
+```powershell
+tshark --version
+```
+
+### Kali / Debian-based Linux
 
 ```bash
+sudo apt update
 sudo apt install tshark
+```
+
+Verify:
+
+```bash
+tshark --version
 ```
 
 ---
 
-# Usage
+## Running CyberLab
+
+### Desktop GUI
+
+```bash
+python gui_app.py
+```
+
+### Command-Line Analysis
 
 ```bash
 python main.py captures/example.pcapng
@@ -98,42 +226,109 @@ python main.py captures/example.pcapng
 
 ---
 
-# Project Roadmap
+## Windows Build
 
-v0.1
+CyberLab can be packaged as a Windows desktop application using PyInstaller.
 
-- Core Parser
+Example:
 
-- TShark Integration
+```powershell
+python -m PyInstaller `
+  --noconfirm `
+  --clean `
+  --windowed `
+  --name CyberLab `
+  --icon "resources\icons\cyberlab.ico" `
+  --add-data "resources;resources" `
+  gui_app.py
+```
 
-- JSON/CSV/HTML Reports
+The application will be generated under:
 
-v0.2
-
-- Wi-Fi Forensics Engine
-
-v0.3
-
-- OUI Detection
-
-v0.4
-
-- Timeline Analysis
-
-v0.5
-
-- HTML Dashboard
-
-v1.0
-
-- Professional Release
+```text
+dist/CyberLab/
+```
 
 ---
 
-# License
+## Project Structure
 
-This project is intended for educational purposes and analysis of
-capture files obtained in authorized laboratory environments.
+```text
+wifi-forensics-analyzer/
+│
+├── gui/
+│   ├── pages/
+│   └── resources/
+│
+├── src/
+│   ├── analyzer.py
+│   ├── reporters.py
+│   ├── tshark_parser.py
+│   └── config.py
+│
+├── resources/
+│   ├── icons/
+│   └── logo/
+│
+├── captures/
+├── reports/
+│
+├── gui_app.py
+├── main.py
+├── requirements.txt
+└── README.md
+```
 
-It is not intended to be used for unauthorized access to third-party
-wireless networks.
+---
+
+## Release History
+
+### v1.0.0 — Stable Release
+
+- PySide6 desktop application
+- Wi-Fi forensic analysis engine
+- Vendor / OUI detection
+- Randomized MAC detection
+- Handshake Analysis v2
+- Security Findings v2
+- Network and client filtering
+- Analytics dashboard
+- PDF / HTML / JSON reporting
+- Responsive desktop interface
+- Windows executable packaging
+
+### Earlier Development
+
+The project evolved from an initial command-line Wi-Fi capture analyzer into the CyberLab desktop forensic analysis suite.
+
+---
+
+## Security & Authorized Use
+
+CyberLab is intended for:
+
+- Cybersecurity education
+- Authorized laboratory exercises
+- Analysis of capture files you own or are authorized to inspect
+- Defensive security research
+- Wi-Fi forensic learning
+
+CyberLab is **not intended for unauthorized access, interception, or analysis of third-party wireless networks**.
+
+Users are responsible for ensuring that capture files and network analysis activities comply with applicable laws, policies, and authorization requirements.
+
+---
+
+## Technology
+
+- Python
+- PySide6 / Qt
+- TShark
+- ReportLab
+- PyInstaller
+
+---
+
+## Status
+
+**CyberLab v1.0.0 — Stable**
