@@ -1,9 +1,38 @@
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
+# Capture files
 captures/*.cap
 captures/*.pcap
 captures/*.pcapng
 
+# Generated reports
 reports/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary / logs
+*.log
+*.tmp
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary / logs
+*.log
+*.tmp
