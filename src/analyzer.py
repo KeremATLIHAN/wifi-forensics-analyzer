@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from typing import Any, Iterable
 
 from src.utils import decode_ssid, first_value, is_valid_mac, normalize_mac
+from src.oui_lookup import lookup_vendor
 from datetime import datetime
 
 
@@ -220,6 +221,7 @@ def analyze_packets(
                 "clients": [
                         {
                             "mac": mac,
+                            "vendor": lookup_vendor(mac),
                             "packet_count": packet_count,
                             "sent_packets": client_sent_counts[bssid][mac],
                             "received_packets": client_received_counts[bssid][mac],

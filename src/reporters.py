@@ -157,6 +157,7 @@ def save_html_report(
             client_rows.append(
                 "<tr>"
                 f"<td>{html.escape(str(client.get('mac', '—')))}</td>"
+                f"<td>{html.escape(str(client.get('vendor', 'Bilinmiyor')))}</td>"
                 f"<td>{html.escape(str(client.get('packet_count', 0)))}</td>"
                 f"<td>{html.escape(str(client.get('sent_packets', 0)))}</td>"
                 f"<td>{html.escape(str(client.get('received_packets', 0)))}</td>"
@@ -170,6 +171,7 @@ def save_html_report(
             "<table>"
             "<thead><tr>"
             "<th>İstemci MAC</th>"
+            "<th>Vendor</th>"
             "<th>Toplam Paket</th>"
             "<th>Gönderilen</th>"
             "<th>Alınan</th>"
@@ -182,7 +184,7 @@ def save_html_report(
                 "".join(client_rows)
                 if client_rows
                 else (
-                    "<tr><td colspan='7'>"
+                    "<tr><td colspan='8'>"
                     "Bu ağ için istemci gözlemlenmedi."
                     "</td></tr>"
                 )

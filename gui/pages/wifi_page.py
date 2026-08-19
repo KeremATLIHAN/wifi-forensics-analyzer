@@ -477,6 +477,10 @@ class WifiPage(QWidget):
                 client.get("mac", "—")
             )
 
+            vendor = str(
+                client.get("vendor", "Bilinmiyor")
+            )
+
             packet_count = str(
                 client.get("packet_count", 0)
             )
@@ -488,8 +492,14 @@ class WifiPage(QWidget):
             )
 
             self.client_table.setItem(
-                row_index,
+                row_index,  
                 1,
+                QTableWidgetItem(vendor),
+            )
+
+            self.client_table.setItem(
+                row_index,
+                2,
                 QTableWidgetItem(packet_count),
             )
 
@@ -601,11 +611,12 @@ class WifiPage(QWidget):
         heading = QLabel("İstemci Cihazları")
         heading.setObjectName("sectionTitle")
 
-        self.client_table.setColumnCount(2)
+        self.client_table.setColumnCount(3)
 
         self.client_table.setHorizontalHeaderLabels(
             [
                 "MAC Adresi",
+                "Vendor",
                 "Paket Sayısı",
             ]
         )
@@ -638,6 +649,11 @@ class WifiPage(QWidget):
 
         header.setSectionResizeMode(
             1,
+            QHeaderView.ResizeMode.Stretch,
+        )
+
+        header.setSectionResizeMode(
+            2,
             QHeaderView.ResizeMode.ResizeToContents,
         )
 
@@ -672,6 +688,7 @@ class WifiPage(QWidget):
 
         fields = (
             ("mac", "MAC Adresi"),
+            ("vendor", "Üretici"),
             ("packets", "Toplam Paket"),
             ("sent", "Gönderilen"),
             ("received", "Alınan"),
@@ -726,6 +743,9 @@ class WifiPage(QWidget):
 
             self.device_detail_values["mac"].setText(
                 str(client.get("mac", "—"))
+            )
+            self.device_detail_values["vendor"].setText(
+                str(client.get("vendor", "Bilinmiyor"))
             )
 
             self.device_detail_values["packets"].setText(
