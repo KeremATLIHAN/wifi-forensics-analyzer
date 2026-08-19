@@ -234,6 +234,7 @@ class MainWindow(QMainWindow):
             return
 
         self.wifi_page.clear_analysis_report()
+        self.wifi_page.clear_analytics()
 
         worker = AnalysisWorker(capture_file)
         self.active_worker = worker
@@ -255,6 +256,8 @@ class MainWindow(QMainWindow):
         self.wifi_page.analyze_button.setEnabled(False)
         self.wifi_page.progress_bar.setValue(0)
         self.wifi_page.network_table.setRowCount(0)
+        self.wifi_page.network_search_input.clear()
+        self.wifi_page.client_search_input.clear()
         self.last_networks = []
         self.last_eapol_count = 0
         self.current_report = {}
@@ -387,6 +390,9 @@ class MainWindow(QMainWindow):
         self.wifi_page.show_security_findings(
           report.get("security_findings", [])
 )
+        self.wifi_page.show_analytics(
+            report
+        )
         self.wifi_page.set_analysis_report(
             report
         )

@@ -75,6 +75,9 @@ class WifiPage(QWidget):
         self.current_handshake_candidates: list[dict] = []
         self.finding_count_label = QLabel("0 Bulgu")
         self.finding_summary_labels: dict[str, QLabel] = {}
+        self.active_clients_layout: QVBoxLayout | None = None
+        self.signal_levels_layout: QVBoxLayout | None = None
+        self.frame_distribution_layout: QVBoxLayout | None = None
 
         self.handshake_details_button = QPushButton(
             "Handshake Detayları"
@@ -142,6 +145,9 @@ class WifiPage(QWidget):
         layout.addWidget(clients_section)
 
         layout.addWidget(self._create_findings_panel())
+        layout.addWidget(
+            self._create_analytics_panel()
+        )
 
         log_panel = self._create_log_panel()
         log_panel.setMinimumHeight(160)
@@ -1062,6 +1068,278 @@ class WifiPage(QWidget):
         for label in self.device_detail_values.values():
             label.setText("—")
             label.setStyleSheet("")
+
+    def _create_analytics_panel(self) -> QFrame:
+        """Hafif Qt widget'larıyla analytics bölümünü oluşturur."""
+
+        panel = QFrame()
+        panel.setObjectName("contentCard")
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(12)
+
+        heading = QLabel("ANALYTICS")
+        heading.setObjectName("sectionTitle")
+        layout.addWidget(heading)
+
+        def create_card(
+            title_text: str,
+        ) -> tuple[QFrame, QVBoxLayout]:
+            card = QFrame()
+            card.setObjectName("analyticsCard")
+
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(14, 12, 14, 12)
+            card_layout.setSpacing(8)
+
+            title = QLabel(title_text)
+            title.setObjectName("analyticsTitle")
+            card_layout.addWidget(title)
+
+            rows_layout = QVBoxLayout()
+            rows_layout.setSpacing(8)
+            card_layout.addLayout(rows_layout)
+
+            return card, rows_layout
+
+        active_card, self.active_clients_layout = create_card(
+            "En Aktif İstemciler"
+        )
+        signal_card, self.signal_levels_layout = create_card(
+            "Ağ Sinyal Seviyeleri"
+        )
+        frame_card, self.frame_distribution_layout = create_card(
+            "802.11 Frame Dağılımı"
+        )
+
+        layout.addWidget(active_card)
+        layout.addWidget(signal_card)
+        layout.addWidget(frame_card)
+
+        self._add_analytics_placeholder(
+            self.active_clients_layout,
+            "İstemci aktivitesi verisi bulunamadı.",
+        )
+        self._add_analytics_placeholder(
+            self.signal_levels_layout,
+            "Sinyal seviyesi verisi bulunamadı.",
+        )
+        self._add_analytics_placeholder(
+            self.frame_distribution_layout,
+            "Frame dağılımı verisi bulunamadı.",
+        )
+
+        return panel
+
+    def _create_bar_row(
+        self,
+        label: str,
+        value_text: str,
+        progress: int,
+        color: str,
+    ) -> QWidget:
+        """Tek bir yatay analytics bar satırı oluşturur."""
+
+        container = QWidget()
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 2, 0, 2)
+        layout.setSpacing(4)
+
+        text_layout = QHBoxLayout()
+
+        name_label = QLabel(label)
+        name_label.setObjectName("analyticsLabel")
+
+        value_label = QLabel(value_text)
+        value_label.setObjectName("analyticsValue")
+
+        text_layout.addWidget(name_label, 1)
+        text_layout.addWidget(value_label)
+
+        bar = QProgressBar()
+        bar.setRange(0, 100)
+        bar.setValue(
+            max(0, min(100, int(progress)))
+        )
+        bar.setTextVisible(False)
+        bar.setFixedHeight(10)
+        bar.setStyleSheet(
+            f"""
+            QProgressBar {{
+                background-color: #1E293B;
+                border: none;
+                border-radius: 5px;
+            }}
+
+            QProgressBar::chunk {{
+                background-color: {color};
+                border-radius: 5px;
+            }}
+            """
+        )
+
+        layout.addLayout(text_layout)
+        layout.addWidget(bar)
+
+        return container
+
+    def show_analytics(
+        self,
+        report: dict,
+    ) -> None:
+        """Analiz raporunu üç karşılaştırmalı bar grafiğinde gösterir."""
+
+        self.clear_analytics()
+
+        networks = report.get("networks", [])
+
+        client_counts: dict[str, int] = {}
+        for network in networks:
+            for client in network.get("clients", []):
+                mac = str(client.get("mac", ""))
+                if not mac:
+                    continue
+                client_counts[mac] = (
+                    client_counts.get(mac, 0)
+                    + int(client.get("packet_count", 0))
+                )
+
+        top_clients = sorted(
+            client_counts.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )[:10]
+
+        if top_clients:
+            max_packets = top_clients[0][1]
+            for mac, packet_count in top_clients:
+                progress = (
+                    packet_count / max_packets * 100
+                    if max_packets
+                    else 0
+                )
+                self.active_clients_layout.addWidget(
+                    self._create_bar_row(
+                        mac,
+                        f"{packet_count:,}",
+                        int(progress),
+                        "#34D399",
+                    )
+                )
+        else:
+            self._add_analytics_placeholder(
+                self.active_clients_layout,
+                "İstemci aktivitesi verisi bulunamadı.",
+            )
+
+        signal_rows: list[tuple[str, float]] = []
+        for network in networks:
+            signal = network.get("average_signal_dbm")
+            if signal is None:
+                continue
+
+            ssids = network.get("ssids", [])
+            label = (
+                ", ".join(str(ssid) for ssid in ssids)
+                if ssids
+                else str(network.get("bssid", "<Gizli SSID>"))
+            )
+            signal_rows.append((label, float(signal)))
+
+        signal_rows.sort(
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        signal_rows = signal_rows[:10]
+
+        if signal_rows:
+            for label, dbm in signal_rows:
+                progress = (dbm + 100) / 70 * 100
+                progress = max(0, min(100, progress))
+
+                self.signal_levels_layout.addWidget(
+                    self._create_bar_row(
+                        label,
+                        f"{dbm:.1f} dBm",
+                        int(progress),
+                        "#60A5FA",
+                    )
+                )
+        else:
+            self._add_analytics_placeholder(
+                self.signal_levels_layout,
+                "Sinyal seviyesi verisi bulunamadı.",
+            )
+
+        frame_subtypes = report.get("frame_subtypes", {})
+        top_frames = sorted(
+            frame_subtypes.items(),
+            key=lambda item: int(item[1]),
+            reverse=True,
+        )[:10]
+
+        if top_frames:
+            max_frames = int(top_frames[0][1])
+            for subtype, count in top_frames:
+                count = int(count)
+                progress = (
+                    count / max_frames * 100
+                    if max_frames
+                    else 0
+                )
+                self.frame_distribution_layout.addWidget(
+                    self._create_bar_row(
+                        str(subtype),
+                        f"{count:,}",
+                        int(progress),
+                        "#FBBF24",
+                    )
+                )
+        else:
+            self._add_analytics_placeholder(
+                self.frame_distribution_layout,
+                "Frame dağılımı verisi bulunamadı.",
+            )
+
+    def _clear_layout(
+        self,
+        layout: QVBoxLayout | None,
+    ) -> None:
+        """Bir layout içindeki widget'ları temizler."""
+
+        if layout is None:
+            return
+
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+
+            if widget is not None:
+                widget.deleteLater()
+
+    def _add_analytics_placeholder(
+        self,
+        layout: QVBoxLayout | None,
+        message: str,
+    ) -> None:
+        """Analytics kartına placeholder ekler."""
+
+        if layout is None:
+            return
+
+        label = QLabel(message)
+        label.setObjectName("analyticsPlaceholder")
+        label.setWordWrap(True)
+        layout.addWidget(label)
+
+    def clear_analytics(self) -> None:
+        """Analytics sonuçlarını temizler."""
+
+        self._clear_layout(self.active_clients_layout)
+        self._clear_layout(self.signal_levels_layout)
+        self._clear_layout(self.frame_distribution_layout)
 
     def _create_findings_panel(self) -> QFrame:
         """Security Findings panelini oluşturur."""
