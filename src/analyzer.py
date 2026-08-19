@@ -313,6 +313,24 @@ def analyze_packets(
 
     findings: list[dict[str, str]] = []
 
+    def add_finding(
+        severity: str,
+        category: str,
+        title: str,
+        description: str,
+    ) -> None:
+        """Analiz sonucuna standart bir forensic bulgu ekler."""
+
+        findings.append(
+            {
+                "severity": severity,
+                "category": category,
+                "title": title,
+                "description": description,
+            }
+        )
+
+    # 1. Handshake / EAPOL
     strong_handshakes = [
         candidate
         for candidate in handshake_candidates
@@ -326,118 +344,156 @@ def analyze_packets(
     ]
 
     if strong_handshakes:
-        findings.append(
-            {
-                "severity": "success",
-                "title": "Handshake adayı tespit edildi",
-                "description": (
-                    f"{len(strong_handshakes)} istemci/ağ eşleşmesinde "
-                    "en az 4 EAPOL paketi gözlemlendi."
-                ),
-            }
+        add_finding(
+            "success",
+            "handshake",
+            "Handshake adayı tespit edildi",
+            (
+                f"{len(strong_handshakes)} istemci/ağ "
+                "eşleşmesinde en az 4 EAPOL paketi "
+                "gözlemlendi."
+            ),
         )
     elif partial_handshakes:
-        findings.append(
-            {
-                "severity": "warning",
-                "title": "Eksik EAPOL alışverişi",
-                "description": (
-                    f"{len(partial_handshakes)} istemci/ağ eşleşmesinde "
-                    "kısmi EAPOL trafiği gözlemlendi."
-                ),
-            }
+        add_finding(
+            "warning",
+            "handshake",
+            "Kısmi EAPOL alışverişi",
+            (
+                f"{len(partial_handshakes)} istemci/ağ "
+                "eşleşmesinde tamamlanmamış EAPOL "
+                "trafiği gözlemlendi."
+            ),
         )
     else:
-        findings.append(
-            {
-                "severity": "warning",
-                "title": "Handshake bulunamadı",
-                "description": (
-                    "Yakalama dosyasında istemci/ağ bazında "
-                    "yeterli EAPOL trafiği tespit edilmedi."
-                ),
-            }
+        add_finding(
+            "info",
+            "handshake",
+            "Handshake gözlemlenmedi",
+            (
+                "Yakalama dosyasında istemci/ağ bazında "
+                "yeterli EAPOL trafiği tespit edilmedi."
+            ),
         )
 
-    if not networks:
-        findings.append(
-            {
-                "severity": "warning",
-                "title": "Kablosuz ağ bulunamadı",
-                "description": (
-                    "Yakalama içerisinde analiz edilebilir bir BSSID bulunamadı."
-                ),
-            }
-        )
-    else:
-        findings.append(
-            {
-                "severity": "info",
-                "title": "Kablosuz ağlar tespit edildi",
-                "description": (
-                    f"Toplam {len(networks)} farklı ağ gözlemlendi."
-                ),
-            }
+    # 2. Privacy / Randomized MAC
+    randomized_clients: set[str] = set()
+
+    for network in networks:
+        for client in network.get("clients", []):
+            if client.get("vendor") == "Private / Randomized MAC":
+                mac = str(client.get("mac", ""))
+                if mac:
+                    randomized_clients.add(mac)
+
+    if randomized_clients:
+        add_finding(
+            "info",
+            "privacy",
+            "Randomized MAC kullanımı",
+            (
+                f"{len(randomized_clients)} istemcide "
+                "locally administered / randomized "
+                "MAC adresi gözlemlendi."
+            ),
         )
 
-    all_clients = [
-        client
-        for network in networks
-        for client in network.get("clients", [])
-    ]
+    # 3. Wireless / Hidden or Unknown SSID
+    hidden_networks: list[dict[str, Any]] = []
 
-    high_activity_clients = [
-        client
-        for client in all_clients
-        if client.get("activity_level") == "Yüksek"
-    ]
+    for network in networks:
+        ssids = network.get("ssids", [])
+        if not ssids:
+            hidden_networks.append(network)
+
+    if hidden_networks:
+        add_finding(
+            "info",
+            "wireless",
+            "SSID bilgisi belirlenemedi",
+            (
+                f"{len(hidden_networks)} ağ için "
+                "yakalama verisinden SSID bilgisi "
+                "belirlenemedi."
+            ),
+        )
+
+    # 4. Signal
+    weak_signal_networks: list[dict[str, Any]] = []
+
+    for network in networks:
+        signal = network.get("average_signal_dbm")
+        if signal is not None and signal <= -80:
+            weak_signal_networks.append(network)
+
+    if weak_signal_networks:
+        add_finding(
+            "warning",
+            "signal",
+            "Zayıf sinyal gözlemlendi",
+            (
+                f"{len(weak_signal_networks)} ağda "
+                "-80 dBm veya daha düşük ortalama "
+                "sinyal seviyesi gözlemlendi."
+            ),
+        )
+
+    # 5. Activity
+    high_activity_clients: list[dict[str, Any]] = []
+
+    for network in networks:
+        for client in network.get("clients", []):
+            packet_count = int(client.get("packet_count", 0))
+            if packet_count >= 10000:
+                high_activity_clients.append(client)
 
     if high_activity_clients:
-        findings.append(
-            {
-                "severity": "info",
-                "title": "Yoğun istemci aktivitesi",
-                "description": (
-                    f"{len(high_activity_clients)} istemci yüksek "
-                    "paket aktivitesi gösteriyor."
-                ),
-            }
+        highest_activity_client = max(
+            high_activity_clients,
+            key=lambda client: int(client.get("packet_count", 0)),
         )
 
-    missing_channel_networks = [
-        network
-        for network in networks
-        if network.get("channel") is None
-    ]
-
-    if missing_channel_networks:
-        findings.append(
-            {
-                "severity": "warning",
-                "title": "Kanal bilgisi eksik",
-                "description": (
-                    f"{len(missing_channel_networks)} ağ için kanal bilgisi "
-                    "yakalama dosyasından alınamadı."
-                ),
-            }
+        highest_mac = str(
+            highest_activity_client.get("mac", "Bilinmiyor")
         )
 
-    missing_signal_networks = [
-        network
-        for network in networks
-        if network.get("average_signal_dbm") is None
-    ]
+        highest_packets = int(
+            highest_activity_client.get("packet_count", 0)
+        )
 
-    if missing_signal_networks:
-        findings.append(
-            {
-                "severity": "warning",
-                "title": "Sinyal bilgisi eksik",
-                "description": (
-                    f"{len(missing_signal_networks)} ağ için sinyal seviyesi "
-                    "bulunamadı."
-                ),
-            }
+        add_finding(
+            "info",
+            "activity",
+            "Yüksek istemci aktivitesi",
+            (
+                f"{len(high_activity_clients)} istemci "
+                "10.000 veya daha fazla paket ile "
+                "yüksek trafik aktivitesi gösterdi. "
+                f"En yoğun istemci: {highest_mac} "
+                f"({highest_packets} paket)."
+            ),
+        )
+
+    # 6. Unknown Vendor
+    unknown_vendor_clients: set[str] = set()
+
+    for network in networks:
+        for client in network.get("clients", []):
+            if client.get("vendor") == "Bilinmiyor":
+                mac = str(client.get("mac", ""))
+                if mac:
+                    unknown_vendor_clients.add(mac)
+
+    if unknown_vendor_clients:
+        add_finding(
+            "info",
+            "device",
+            "Üreticisi belirlenemeyen cihazlar",
+            (
+                f"{len(unknown_vendor_clients)} istemcinin "
+                "üreticisi mevcut offline OUI "
+                "veritabanından belirlenemedi."
+            ),
         )
 
     return {
