@@ -52,6 +52,8 @@ class WifiPage(QWidget):
         self.current_report: dict | None = None
 
         self.capture_path_input = QLineEdit()
+        self.network_search_input = QLineEdit()
+        self.client_search_input = QLineEdit()
         self.browse_button = QPushButton("Dosya Seç")
         self.analyze_button = QPushButton("Analiz Et")
 
@@ -165,6 +167,12 @@ class WifiPage(QWidget):
         )
         self.handshake_details_button.clicked.connect(
             self._show_handshake_details
+        )
+        self.network_search_input.textChanged.connect(
+            self._filter_networks
+        )
+        self.client_search_input.textChanged.connect(
+            self._filter_clients
         )
 
     def _create_capture_panel(self) -> QFrame:
@@ -280,6 +288,11 @@ class WifiPage(QWidget):
         heading = QLabel("Tespit Edilen Ağlar")
         heading.setObjectName("sectionTitle")
 
+        self.network_search_input.setPlaceholderText(
+            "SSID veya BSSID ara..."
+        )
+        self.network_search_input.setClearButtonEnabled(True)
+
         self.network_table.setColumnCount(5)
         self.network_table.setHorizontalHeaderLabels(
             [
@@ -329,6 +342,7 @@ class WifiPage(QWidget):
         self.network_table.setShowGrid(False)
 
         layout.addWidget(heading)
+        layout.addWidget(self.network_search_input)
         layout.addWidget(self.network_table)
 
         return panel
@@ -794,6 +808,11 @@ class WifiPage(QWidget):
         heading = QLabel("İstemci Cihazları")
         heading.setObjectName("sectionTitle")
 
+        self.client_search_input.setPlaceholderText(
+            "MAC adresi veya Vendor ara..."
+        )
+        self.client_search_input.setClearButtonEnabled(True)
+
         self.client_table.setColumnCount(3)
 
         self.client_table.setHorizontalHeaderLabels(
@@ -845,9 +864,72 @@ class WifiPage(QWidget):
         )
 
         layout.addWidget(heading)
+        layout.addWidget(self.client_search_input)
         layout.addWidget(self.client_table)
 
         return panel
+
+    def _filter_networks(
+        self,
+        search_text: str,
+    ) -> None:
+        """SSID ve BSSID üzerinden ağ tablosunu filtreler."""
+
+        query = search_text.strip().lower()
+
+        for row in range(
+            self.network_table.rowCount()
+        ):
+            matches = False
+
+            for column in (0, 1):
+                item = self.network_table.item(
+                    row,
+                    column,
+                )
+
+                if (
+                    item is not None
+                    and query in item.text().lower()
+                ):
+                    matches = True
+                    break
+
+            self.network_table.setRowHidden(
+                row,
+                not matches if query else False,
+            )
+
+    def _filter_clients(
+        self,
+        search_text: str,
+    ) -> None:
+        """MAC ve Vendor üzerinden istemci tablosunu filtreler."""
+
+        query = search_text.strip().lower()
+
+        for row in range(
+            self.client_table.rowCount()
+        ):
+            matches = False
+
+            for column in (0, 1):
+                item = self.client_table.item(
+                    row,
+                    column,
+                )
+
+                if (
+                    item is not None
+                    and query in item.text().lower()
+                ):
+                    matches = True
+                    break
+
+            self.client_table.setRowHidden(
+                row,
+                not matches if query else False,
+            )
 
     def _create_device_details_panel(self) -> QFrame:
         """Seçilen istemci cihazının ayrıntılarını gösterir."""
