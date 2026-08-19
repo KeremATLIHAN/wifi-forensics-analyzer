@@ -73,6 +73,8 @@ class WifiPage(QWidget):
         self.device_detail_values: dict[str, QLabel] = {}
         self.current_clients: list[dict] = []
         self.current_handshake_candidates: list[dict] = []
+        self.finding_count_label = QLabel("0 Bulgu")
+        self.finding_summary_labels: dict[str, QLabel] = {}
 
         self.handshake_details_button = QPushButton(
             "Handshake Detayları"
@@ -1071,10 +1073,54 @@ class WifiPage(QWidget):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(10)
 
+        header_layout = QHBoxLayout()
+
         heading = QLabel("Security Findings")
         heading.setObjectName("sectionTitle")
 
-        layout.addWidget(heading)
+        self.finding_count_label.setStyleSheet(
+            "color: #94A3B8; font-weight: 700;"
+        )
+
+        header_layout.addWidget(heading)
+        header_layout.addStretch(1)
+        header_layout.addWidget(self.finding_count_label)
+
+        layout.addLayout(header_layout)
+
+        summary_layout = QHBoxLayout()
+        summary_layout.setSpacing(8)
+
+        severity_items = (
+            ("critical", "KRİTİK", "#F87171"),
+            ("warning", "UYARI", "#FBBF24"),
+            ("info", "BİLGİ", "#60A5FA"),
+            ("success", "BAŞARILI", "#34D399"),
+        )
+
+        for key, title, color in severity_items:
+            badge = QLabel(f"{title}  0")
+            badge.setAlignment(
+                Qt.AlignmentFlag.AlignCenter
+            )
+            badge.setMinimumHeight(34)
+            badge.setStyleSheet(
+                f"""
+                QLabel {{
+                    color: {color};
+                    border: 1px solid {color};
+                    border-radius: 8px;
+                    padding: 5px 10px;
+                    font-weight: 700;
+                }}
+                """
+            )
+
+            self.finding_summary_labels[key] = badge
+            summary_layout.addWidget(badge)
+
+        summary_layout.addStretch(1)
+        layout.addLayout(summary_layout)
 
         self.findings_layout = QVBoxLayout()
         self.findings_layout.setSpacing(8)
@@ -1108,6 +1154,35 @@ class WifiPage(QWidget):
             if widget is not None:
                 widget.deleteLater()
 
+        self.finding_count_label.setText(
+            f"{len(findings)} Bulgu"
+        )
+
+        severity_counts = {
+            "critical": 0,
+            "warning": 0,
+            "info": 0,
+            "success": 0,
+        }
+
+        for finding in findings:
+            severity = finding.get("severity", "info")
+            if severity in severity_counts:
+                severity_counts[severity] += 1
+
+        severity_titles = {
+            "critical": "KRİTİK",
+            "warning": "UYARI",
+            "info": "BİLGİ",
+            "success": "BAŞARILI",
+        }
+
+        for severity, label in self.finding_summary_labels.items():
+            label.setText(
+                f"{severity_titles[severity]}  "
+                f"{severity_counts[severity]}"
+            )
+
         if not findings:
             label = QLabel(
                 "Analiz sonucunda ek bir güvenlik bulgusu üretilmedi."
@@ -1117,17 +1192,31 @@ class WifiPage(QWidget):
             return
 
         severity_styles = {
-            "success": ("#34D399", "✓"),
-            "warning": ("#FBBF24", "⚠"),
-            "info": ("#60A5FA", "●"),
-            "critical": ("#F87171", "✕"),
+            "success": ("#34D399", "BAŞARILI"),
+            "warning": ("#FBBF24", "UYARI"),
+            "info": ("#60A5FA", "BİLGİ"),
+            "critical": ("#F87171", "KRİTİK"),
+        }
+
+        category_titles = {
+            "handshake": "HANDSHAKE",
+            "privacy": "PRIVACY",
+            "wireless": "WIRELESS",
+            "signal": "SIGNAL",
+            "activity": "ACTIVITY",
+            "device": "DEVICE",
         }
 
         for finding in findings:
             severity = finding.get("severity", "info")
-            color, symbol = severity_styles.get(
+            color, severity_text = severity_styles.get(
                 severity,
-                ("#94A3B8", "●"),
+                ("#94A3B8", "BİLGİ"),
+            )
+            category = finding.get("category", "general")
+            category_text = category_titles.get(
+                category,
+                str(category).upper(),
             )
 
             card = QFrame()
@@ -1135,14 +1224,32 @@ class WifiPage(QWidget):
 
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(14, 10, 14, 10)
-            card_layout.setSpacing(4)
+            card_layout.setSpacing(6)
 
-            title = QLabel(
-                f"{symbol} {finding.get('title', 'Bulgu')}"
-            )
-            title.setStyleSheet(
+            badge_layout = QHBoxLayout()
+            badge_layout.setSpacing(8)
+
+            severity_badge = QLabel(severity_text)
+            severity_badge.setStyleSheet(
                 f"color: {color}; font-weight: 700;"
             )
+
+            category_badge = QLabel(category_text)
+            category_badge.setStyleSheet(
+                "color: #94A3B8; font-weight: 700;"
+            )
+
+            badge_layout.addWidget(severity_badge)
+            badge_layout.addWidget(category_badge)
+            badge_layout.addStretch(1)
+
+            title = QLabel(
+                finding.get("title", "Bulgu")
+            )
+            title.setStyleSheet(
+                "font-weight: 700; font-size: 14px;"
+            )
+            title.setWordWrap(True)
 
             description = QLabel(
                 finding.get("description", "")
@@ -1150,6 +1257,7 @@ class WifiPage(QWidget):
             description.setObjectName("findingDescription")
             description.setWordWrap(True)
 
+            card_layout.addLayout(badge_layout)
             card_layout.addWidget(title)
             card_layout.addWidget(description)
 
@@ -1173,6 +1281,24 @@ class WifiPage(QWidget):
 
         self.current_report = None
         self.export_button.setEnabled(False)
+
+        self.finding_count_label.setText(
+            "0 Bulgu"
+        )
+
+        titles = {
+            "critical": "KRİTİK",
+            "warning": "UYARI",
+            "info": "BİLGİ",
+            "success": "BAŞARILI",
+        }
+
+        for severity, label in (
+            self.finding_summary_labels.items()
+        ):
+            label.setText(
+                f"{titles[severity]}  0"
+            )
 
     def _open_report_file(self, output_path: Path) -> None:
         """Kaydedilen raporu uygun uygulamayla açar."""
