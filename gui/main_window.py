@@ -137,7 +137,7 @@ class MainWindow(QMainWindow):
         layout.addStretch(1)
 
         version_label = QLabel(
-            "Desktop Suite · v0.4.0"
+            "Desktop Suite · v1.0.0"
         )
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet(
