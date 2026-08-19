@@ -65,6 +65,7 @@ class MainWindow(QMainWindow):
         self.active_worker: AnalysisWorker | None = None
         self.last_networks: list[dict[str, Any]] = []
         self.last_eapol_count = 0
+        self.current_report: dict[str, Any] = {}
         self.analysis_started_at: float | None = None
 
         self._build_ui()
@@ -256,6 +257,7 @@ class MainWindow(QMainWindow):
         self.wifi_page.network_table.setRowCount(0)
         self.last_networks = []
         self.last_eapol_count = 0
+        self.current_report = {}
         self.wifi_page.clear_network_details()
 
         self.statusBar().showMessage(
@@ -287,6 +289,7 @@ class MainWindow(QMainWindow):
     ) -> None:
         """Analiz sonuçlarını kartlara ve tabloya aktarır."""
 
+        self.current_report = report
         networks = report.get("networks", [])
         self.last_networks = networks
         self.last_eapol_count = int(
@@ -342,6 +345,10 @@ class MainWindow(QMainWindow):
             self.wifi_page.show_network_details(
                 networks[0],
                 self.last_eapol_count,
+                self.current_report.get(
+                    "handshake_candidates",
+                    [],
+                ),
             )
 
         self.wifi_page.status_label.setStyleSheet(
@@ -443,4 +450,8 @@ class MainWindow(QMainWindow):
         self.wifi_page.show_network_details(
             network,
             self.last_eapol_count,
+            self.current_report.get(
+                "handshake_candidates",
+                [],
+            ),
         )

@@ -254,7 +254,110 @@ def analyze_packets(
             }
         )
 
+    handshake_candidates: list[dict[str, Any]] = []
+
+    eapol_groups: dict[
+        tuple[str, str],
+        list[dict[str, str]],
+    ] = defaultdict(list)
+
+    for packet in eapol_details:
+        bssid = packet.get("bssid", "")
+        source = packet.get("source", "")
+        destination = packet.get("destination", "")
+
+        if not bssid:
+            continue
+
+        client = ""
+
+        if source and source != bssid:
+            client = source
+        elif destination and destination != bssid:
+            client = destination
+
+        if not client:
+            continue
+
+        eapol_groups[(bssid, client)].append(packet)
+
+    for (bssid, client), packets_for_pair in eapol_groups.items():
+        packet_count = len(packets_for_pair)
+
+        first_seen = (
+            packets_for_pair[0].get("timestamp", "")
+            if packets_for_pair
+            else ""
+        )
+
+        last_seen = (
+            packets_for_pair[-1].get("timestamp", "")
+            if packets_for_pair
+            else ""
+        )
+
+        handshake_candidates.append(
+            {
+                "bssid": bssid,
+                "client": client,
+                "eapol_packet_count": packet_count,
+                "first_seen": first_seen,
+                "last_seen": last_seen,
+                "status": (
+                    "strong_candidate"
+                    if packet_count >= 4
+                    else "partial"
+                ),
+            }
+        )
+
     findings: list[dict[str, str]] = []
+
+    strong_handshakes = [
+        candidate
+        for candidate in handshake_candidates
+        if candidate.get("status") == "strong_candidate"
+    ]
+
+    partial_handshakes = [
+        candidate
+        for candidate in handshake_candidates
+        if candidate.get("status") == "partial"
+    ]
+
+    if strong_handshakes:
+        findings.append(
+            {
+                "severity": "success",
+                "title": "Handshake adayı tespit edildi",
+                "description": (
+                    f"{len(strong_handshakes)} istemci/ağ eşleşmesinde "
+                    "en az 4 EAPOL paketi gözlemlendi."
+                ),
+            }
+        )
+    elif partial_handshakes:
+        findings.append(
+            {
+                "severity": "warning",
+                "title": "Eksik EAPOL alışverişi",
+                "description": (
+                    f"{len(partial_handshakes)} istemci/ağ eşleşmesinde "
+                    "kısmi EAPOL trafiği gözlemlendi."
+                ),
+            }
+        )
+    else:
+        findings.append(
+            {
+                "severity": "warning",
+                "title": "Handshake bulunamadı",
+                "description": (
+                    "Yakalama dosyasında istemci/ağ bazında "
+                    "yeterli EAPOL trafiği tespit edilmedi."
+                ),
+            }
+        )
 
     if not networks:
         findings.append(
@@ -362,4 +465,5 @@ def analyze_packets(
             in destination_counts.most_common(20)
         ],
         "eapol_packets": eapol_details,
+        "handshake_candidates": handshake_candidates,
     }

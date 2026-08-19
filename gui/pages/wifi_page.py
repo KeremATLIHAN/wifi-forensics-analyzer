@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QScrollArea
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -69,6 +70,12 @@ class WifiPage(QWidget):
         self.detail_values: dict[str, QLabel] = {}
         self.device_detail_values: dict[str, QLabel] = {}
         self.current_clients: list[dict] = []
+        self.current_handshake_candidates: list[dict] = []
+
+        self.handshake_details_button = QPushButton(
+            "Handshake Detayları"
+        )
+        self.handshake_details_button.setEnabled(False)
 
         self._build_ui()
         self._connect_signals()
@@ -155,6 +162,9 @@ class WifiPage(QWidget):
         )
         self.export_button.clicked.connect(
             self._export_report
+        )
+        self.handshake_details_button.clicked.connect(
+            self._show_handshake_details
         )
 
     def _create_capture_panel(self) -> QFrame:
@@ -414,7 +424,15 @@ class WifiPage(QWidget):
             self.detail_values[key] = value_label
             layout.addLayout(row)
 
-            layout.addStretch(1)
+        self.handshake_details_button.setObjectName(
+            "secondaryButton"
+        )
+
+        layout.addWidget(
+            self.handshake_details_button
+        )
+
+        layout.addStretch(1)
 
         return panel
 
@@ -423,6 +441,7 @@ class WifiPage(QWidget):
         self,
         network: dict,
         eapol_count: int,
+        handshake_candidates: list[dict] | None = None,
     ) -> None:
         """Seçilen ağın bilgilerini detay panelinde gösterir."""
 
@@ -456,18 +475,67 @@ class WifiPage(QWidget):
         self.detail_values["eapol"].setText(
             str(eapol_count)
         )
-        handshake_found = eapol_count >= 4
+
+        handshake_candidates = handshake_candidates or []
+
+        network_bssid = str(
+            network.get("bssid", "")
+        ).lower()
+
+        network_candidates = [
+            candidate
+            for candidate in handshake_candidates
+            if str(
+                candidate.get("bssid", "")
+            ).lower() == network_bssid
+        ]
+
+        self.current_handshake_candidates = (
+            network_candidates
+        )
+
+        self.handshake_details_button.setEnabled(
+            bool(network_candidates)
+        )
+
+        strong_candidates = [
+            candidate
+            for candidate in network_candidates
+            if candidate.get("status") == "strong_candidate"
+        ]
+
+        partial_candidates = [
+            candidate
+            for candidate in network_candidates
+            if candidate.get("status") == "partial"
+        ]
+
+        if strong_candidates:
+            handshake_text = (
+                f"● Güçlü Aday ({len(strong_candidates)})"
+            )
+            handshake_style = (
+                "color: #34D399; font-weight: 700;"
+            )
+        elif partial_candidates:
+            handshake_text = (
+                f"● Kısmi ({len(partial_candidates)})"
+            )
+            handshake_style = (
+                "color: #FBBF24; font-weight: 700;"
+            )
+        else:
+            handshake_text = "● Bulunamadı"
+            handshake_style = (
+                "color: #F87171; font-weight: 700;"
+            )
 
         self.detail_values["handshake"].setText(
-            "● Bulundu" if handshake_found else "● Bulunamadı"
+            handshake_text
         )
 
         self.detail_values["handshake"].setStyleSheet(
-            (
-                "color: #34D399; font-weight: 700;"
-                if handshake_found
-                else "color: #F87171; font-weight: 700;"
-            )
+            handshake_style
         )
 
         self.client_table.setRowCount(len(clients))
@@ -503,6 +571,117 @@ class WifiPage(QWidget):
                 QTableWidgetItem(packet_count),
             )
 
+    def _show_handshake_details(self) -> None:
+        """Seçili ağın handshake adaylarını bir tabloda gösterir."""
+
+        if not self.current_handshake_candidates:
+            return
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Handshake Detayları")
+        dialog.resize(900, 360)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(12)
+
+        heading = QLabel("Handshake Adayları")
+        heading.setObjectName("sectionTitle")
+
+        description = QLabel(
+            "Seçili ağ için istemci bazında tespit edilen "
+            "EAPOL alışverişleri."
+        )
+        description.setWordWrap(True)
+
+        table = QTableWidget()
+        table.setColumnCount(6)
+        table.setHorizontalHeaderLabels(
+            [
+                "BSSID",
+                "İstemci",
+                "EAPOL",
+                "Durum",
+                "İlk Görülme",
+                "Son Görülme",
+            ]
+        )
+        table.setRowCount(
+            len(self.current_handshake_candidates)
+        )
+
+        for row, candidate in enumerate(
+            self.current_handshake_candidates
+        ):
+            status = candidate.get(
+                "status",
+                "partial",
+            )
+
+            status_text = (
+                "Güçlü Aday"
+                if status == "strong_candidate"
+                else "Kısmi"
+            )
+
+            values = [
+                candidate.get("bssid", "—"),
+                candidate.get("client", "—"),
+                candidate.get(
+                    "eapol_packet_count",
+                    0,
+                ),
+                status_text,
+                candidate.get(
+                    "first_seen",
+                    "—",
+                ),
+                candidate.get(
+                    "last_seen",
+                    "—",
+                ),
+            ]
+
+            for column, value in enumerate(values):
+                table.setItem(
+                    row,
+                    column,
+                    QTableWidgetItem(
+                        str(value)
+                    ),
+                )
+
+        table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+
+        table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+
+        table.verticalHeader().setVisible(False)
+
+        header = table.horizontalHeader()
+
+        header.setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+
+        close_button = QPushButton(
+            "Kapat"
+        )
+
+        close_button.clicked.connect(
+            dialog.accept
+        )
+
+        layout.addWidget(heading)
+        layout.addWidget(description)
+        layout.addWidget(table)
+        layout.addWidget(close_button)
+
+        dialog.exec()
+
 
     def clear_network_details(self) -> None:
         """Detay panelini temizler."""
@@ -516,6 +695,10 @@ class WifiPage(QWidget):
         self.client_table.setRowCount(0)
 
         self.current_clients = []
+        self.current_handshake_candidates = []
+        self.handshake_details_button.setEnabled(
+            False
+        )
         self.client_table.setRowCount(0)
         self.clear_device_details()
 
