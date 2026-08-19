@@ -298,4 +298,33 @@ QLabel#findingDescription {
     color: #CBD5E1;
     font-size: 12px;
 }
+
+QFrame#analyticsCard {
+    background-color: transparent;
+    border: 1px solid #34445D;
+    border-radius: 10px;
+}
+
+QLabel#analyticsTitle {
+    color: #F8FAFC;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+QLabel#analyticsLabel {
+    color: #CBD5E1;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+QLabel#analyticsValue {
+    color: #94A3B8;
+    font-size: 12px;
+}
+
+QLabel#analyticsPlaceholder {
+    color: #64748B;
+    font-size: 12px;
+    padding: 8px 0;
+}
 """

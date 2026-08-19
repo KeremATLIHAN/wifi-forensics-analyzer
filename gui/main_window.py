@@ -7,6 +7,7 @@ from typing import Any
 from time import perf_counter
 
 from PySide6.QtCore import QThreadPool
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
 
 from gui.worker import AnalysisWorker
@@ -32,24 +33,18 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        from pathlib import Path
-        from PySide6.QtGui import QIcon
-
-        base_dir = Path(__file__).resolve().parent
-        icon_path = base_dir / "resources" / "icons" / "cyberlab.ico"
-
+        base_dir = Path(__file__).resolve().parent.parent
         icon_path = (
-            Path(__file__).resolve().parent.parent
+            base_dir
             / "resources"
             / "icons"
             / "cyberlab.ico"
         )
 
         if icon_path.exists():
-            self.setWindowIcon(QIcon(str(icon_path)))
-
-        if icon_path.exists():
-            self.setWindowIcon(QIcon(str(icon_path)))
+            self.setWindowIcon(
+                QIcon(str(icon_path))
+            )
 
         self.setWindowTitle("CyberLab Desktop Suite")
         self.resize(1440, 900)
@@ -141,7 +136,9 @@ class MainWindow(QMainWindow):
 
         layout.addStretch(1)
 
-        version_label = QLabel("Desktop Suite · v0.2-dev")
+        version_label = QLabel(
+            "Desktop Suite · v0.4.0"
+        )
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet(
             "color: #64748B; font-size: 11px;"
@@ -217,21 +214,61 @@ class MainWindow(QMainWindow):
     ) -> None:
         """Seçilen yakalama dosyasının analizini başlatır."""
 
+        if self.active_worker is not None:
+            QMessageBox.information(
+                self,
+                "Analiz devam ediyor",
+                (
+                    "Mevcut analiz tamamlanmadan "
+                    "yeni analiz başlatılamaz."
+                ),
+            )
+            return
+
+        if not capture_file.exists():
+            QMessageBox.warning(
+                self,
+                "Dosya bulunamadı",
+                (
+                    "Seçilen yakalama dosyası artık "
+                    "mevcut değil."
+                ),
+            )
+            return
+
+        if not capture_file.is_file():
+            QMessageBox.warning(
+                self,
+                "Geçersiz dosya",
+                "Seçilen yol geçerli bir dosya değil.",
+            )
+            return
+
+        if capture_file.suffix.lower() not in {
+            ".pcap",
+            ".pcapng",
+            ".cap",
+        }:
+            QMessageBox.warning(
+                self,
+                "Desteklenmeyen dosya",
+                (
+                    "CyberLab yalnızca .pcap, .pcapng "
+                    "ve .cap yakalama dosyalarını "
+                    "analiz edebilir."
+                ),
+            )
+            return
+
         self.wifi_page.clear_log()
 
         self.analysis_started_at = perf_counter()
 
         self.dashboard_page.set_analysis_running()
 
-        self.wifi_page.add_log(f"● Analiz başlatıldı: {capture_file.name}")
-
-        if self.active_worker is not None:
-            QMessageBox.information(
-                self,
-                "Analiz devam ediyor",
-                "Mevcut analiz tamamlanmadan yeni analiz başlatılamaz.",
-            )
-            return
+        self.wifi_page.add_log(
+            f"● Analiz başlatıldı: {capture_file.name}"
+        )
 
         self.wifi_page.clear_analysis_report()
         self.wifi_page.clear_analytics()
@@ -353,6 +390,13 @@ class MainWindow(QMainWindow):
                     [],
                 ),
             )
+        else:
+            self.wifi_page.clear_network_details()
+
+            self.wifi_page.add_log(
+                "⚠ Yakalama dosyasında Wi-Fi ağı "
+                "tespit edilmedi."
+            )
 
         self.wifi_page.status_label.setStyleSheet(
             "color: #34D399; font-weight: 600;"
@@ -360,7 +404,12 @@ class MainWindow(QMainWindow):
         self.wifi_page.status_label.setText(
             "Analiz başarıyla tamamlandı."
         )
-        self.statusBar().showMessage("Analiz tamamlandı.")
+        if networks:
+            self.statusBar().showMessage("Analiz tamamlandı.")
+        else:
+            self.statusBar().showMessage(
+                "Analiz tamamlandı — ağ tespit edilmedi."
+            )
 
         self.wifi_page.add_log(
             "✓ Analiz başarıyla tamamlandı."
@@ -406,6 +455,15 @@ class MainWindow(QMainWindow):
         error_message: str,
     ) -> None:
         """Analiz sırasında oluşan hatayı gösterir."""
+
+        self.current_report = {}
+        self.last_networks = []
+        self.last_eapol_count = 0
+
+        self.wifi_page.clear_analysis_report()
+        self.wifi_page.clear_analytics()
+        self.wifi_page.clear_network_details()
+        self.wifi_page.progress_bar.setValue(0)
 
         self.wifi_page.status_label.setStyleSheet(
             "color: #F87171; font-weight: 600;"
