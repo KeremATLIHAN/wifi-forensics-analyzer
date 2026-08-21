@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from datetime import datetime
+import time
 from time import perf_counter
 
 from PySide6.QtCore import QThreadPool
@@ -27,6 +29,10 @@ from gui.pages.dashboard_page import DashboardPage
 from gui.pages.wifi_page import WifiPage
 from gui.pages.anomaly_page import AnomalyPage
 from gui.live_traffic_worker import LiveTrafficWorker
+from src.anomaly_engine import (
+    ContextualAnomalyDetector,
+    PointAnomalyDetector,
+)
 
 
 class MainWindow(QMainWindow):
@@ -67,6 +73,14 @@ class MainWindow(QMainWindow):
         self.analysis_started_at: float | None = None
 
         self.live_traffic_worker: LiveTrafficWorker | None = None
+        self.point_anomaly_detector = (PointAnomalyDetector())
+        self.last_point_anomaly_time = 0.0
+        self.point_anomaly_cooldown = 10.0
+        self.contextual_anomaly_detector = (
+            ContextualAnomalyDetector()
+        )
+        self.last_contextual_anomaly_time = 0.0
+        self.contextual_anomaly_cooldown = 15.0
 
         self._build_ui()
         self._connect_page_signals()
@@ -566,6 +580,28 @@ class MainWindow(QMainWindow):
         self.anomaly_page.peak_value.setText(
             "0.00 Mbps"
         )
+
+        self.point_anomaly_detector.reset()
+        self.last_point_anomaly_time = 0.0
+        self.contextual_anomaly_detector.reset()
+        self.last_contextual_anomaly_time = 0.0
+        self.anomaly_page.clear_findings()
+
+        interface_text = (
+            self.anomaly_page
+            .interface_combo
+            .currentText()
+        )
+        self.anomaly_page.session_interface_label.setText(
+            f"Arayüz: {interface_text}"
+        )
+        self.anomaly_page.session_status_label.setText(
+            "● Canlı trafik izleniyor..."
+        )
+        self.anomaly_page.session_duration_label.setText(
+            "Süre: 00:00 / 00:00"
+        )
+
         if self.live_traffic_worker is not None:
             return
 
@@ -653,6 +689,53 @@ class MainWindow(QMainWindow):
 
         self.anomaly_page.traffic_chart.add_value(mbps)
 
+        anomaly_result = (self.point_anomaly_detector.add_sample(mbps))
+
+        if anomaly_result.is_anomaly:
+            now = time.monotonic()
+            cooldown_passed = (
+                now - self.last_point_anomaly_time
+                >= self.point_anomaly_cooldown
+            )
+
+            if cooldown_passed:
+                self.last_point_anomaly_time = now
+                self.anomaly_page.add_point_finding(
+                    elapsed_seconds=elapsed,
+                    value=anomaly_result.value,
+                    baseline=anomaly_result.baseline_mean,
+                    z_score=anomaly_result.z_score,
+                    severity=anomaly_result.severity,
+                    detected_at=datetime.now().strftime(
+                        "%H:%M:%S"
+                    ),
+                )
+
+        contextual_result = (
+            self.contextual_anomaly_detector.add_sample(
+                mbps
+            )
+        )
+
+        if contextual_result.is_anomaly:
+            now = time.monotonic()
+            cooldown_passed = (
+                now - self.last_contextual_anomaly_time
+                >= self.contextual_anomaly_cooldown
+            )
+
+            if cooldown_passed:
+                self.last_contextual_anomaly_time = now
+                self.anomaly_page.add_contextual_finding(
+                    elapsed_seconds=elapsed,
+                    value=contextual_result.value,
+                    baseline=contextual_result.local_mean,
+                    z_score=contextual_result.z_score,
+                    severity=contextual_result.severity,
+                    detected_at=datetime.now().strftime(
+                        "%H:%M:%S"
+                    ),
+                )
 
         total_bytes = int(
             sample.get(
@@ -676,6 +759,9 @@ class MainWindow(QMainWindow):
 
         self.anomaly_page.elapsed_value.setText(
             elapsed_text
+        )
+        self.anomaly_page.session_duration_label.setText(
+            f"Süre: {elapsed_text}"
         )
 
         self.anomaly_page.packet_value.setText(
@@ -708,6 +794,9 @@ class MainWindow(QMainWindow):
         self.anomaly_page.status_label.setText(
             message
         )
+        self.anomaly_page.session_status_label.setText(
+            "İzleme sırasında hata oluştu."
+        )
 
         QMessageBox.critical(
             self,
@@ -729,4 +818,7 @@ class MainWindow(QMainWindow):
 
         self.anomaly_page.stop_button.setEnabled(
             False
+        )
+        self.anomaly_page.session_status_label.setText(
+            "İzleme tamamlandı."
         )

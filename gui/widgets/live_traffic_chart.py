@@ -54,10 +54,10 @@ class LiveTrafficChart(QWidget):
             background,
         )
 
-        margin_left = 52
-        margin_right = 18
-        margin_top = 18
-        margin_bottom = 34
+        margin_left = 64
+        margin_right = 20
+        margin_top = 26
+        margin_bottom = 38
 
         chart_rect = QRectF(
             margin_left,
@@ -146,10 +146,10 @@ class LiveTrafficChart(QWidget):
 
             painter.drawText(
                 QRectF(
-                    4,
-                    y - 8,
-                    margin_left - 10,
-                    16,
+                    6,
+                    y - 9,
+                    margin_left - 18,
+                    18,
                 ),
                 Qt.AlignmentFlag.AlignRight
                 | Qt.AlignmentFlag.AlignVCenter,
@@ -158,12 +158,13 @@ class LiveTrafficChart(QWidget):
 
         painter.drawText(
             QRectF(
+                6,
                 4,
-                2,
-                margin_left - 8,
-                16,
+                margin_left - 14,
+                18,
             ),
-            Qt.AlignmentFlag.AlignRight,
+            Qt.AlignmentFlag.AlignLeft
+            | Qt.AlignmentFlag.AlignVCenter,
             "Mbps",
         )
 
@@ -221,3 +222,29 @@ class LiveTrafficChart(QWidget):
 
         painter.setPen(traffic_pen)
         painter.drawPath(path)
+
+        painter.setPen(text_color)
+        time_labels = (
+            (-60, 0.0),
+            (-45, 0.25),
+            (-30, 0.50),
+            (-15, 0.75),
+            (0, 1.0),
+        )
+
+        for seconds, ratio in time_labels:
+            x = (
+                chart_rect.left()
+                + chart_rect.width() * ratio
+            )
+
+            painter.drawText(
+                QRectF(
+                    x - 22,
+                    chart_rect.bottom() + 8,
+                    44,
+                    18,
+                ),
+                Qt.AlignmentFlag.AlignCenter,
+                f"{seconds}s",
+            )
