@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from gui.pages.dashboard_page import DashboardPage
 from gui.pages.wifi_page import WifiPage
+from gui.pages.anomaly_page import AnomalyPage
 
 
 class MainWindow(QMainWindow):
@@ -55,6 +56,7 @@ class MainWindow(QMainWindow):
 
         self.dashboard_page = DashboardPage()
         self.wifi_page = WifiPage()
+        self.anomaly_page = AnomalyPage()
 
         self.thread_pool = QThreadPool.globalInstance()
         self.active_worker: AnalysisWorker | None = None
@@ -79,6 +81,7 @@ class MainWindow(QMainWindow):
 
         self.stack.addWidget(self.dashboard_page)
         self.stack.addWidget(self.wifi_page)
+        self.stack.addWidget(self.anomaly_page)
 
         root_layout.addWidget(self.stack, 1)
 
@@ -133,6 +136,12 @@ class MainWindow(QMainWindow):
                 1,
             )
         )
+        layout.addWidget(
+            self._create_navigation_button(
+                "Anomaly Monitor",
+                2,
+            )
+        )
 
         layout.addStretch(1)
 
@@ -185,6 +194,7 @@ class MainWindow(QMainWindow):
         page_names = {
             0: "Dashboard",
             1: "Wi-Fi Forensics",
+            2: "Anomaly Monitor",
         }
 
         selected_name = page_names.get(
