@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from gui.pages.dashboard_page import DashboardPage
 from gui.pages.wifi_page import WifiPage
 from gui.pages.anomaly_page import AnomalyPage
+from gui.live_traffic_worker import LiveTrafficWorker
 
 
 class MainWindow(QMainWindow):
@@ -65,6 +66,8 @@ class MainWindow(QMainWindow):
         self.current_report: dict[str, Any] = {}
         self.analysis_started_at: float | None = None
 
+        self.live_traffic_worker: LiveTrafficWorker | None = None
+
         self._build_ui()
         self._connect_page_signals()
         self._select_page(0)
@@ -101,6 +104,14 @@ class MainWindow(QMainWindow):
         )
         self.wifi_page.network_table.itemSelectionChanged.connect(
              self._on_network_selected
+        )
+
+        self.anomaly_page.monitoring_requested.connect(
+            self._start_live_monitoring
+        )
+
+        self.anomaly_page.stop_requested.connect(
+            self._stop_live_monitoring
         )
 
     def _create_sidebar(self) -> QFrame:
@@ -528,4 +539,173 @@ class MainWindow(QMainWindow):
                 "handshake_candidates",
                 [],
             ),
+        )
+
+    def _start_live_monitoring(
+        self,
+        interface_index: int,
+        duration_seconds: int,
+    ) -> None:
+        """Anomaly Monitor canlı trafik worker'ını başlatır."""
+
+        if self.live_traffic_worker is not None:
+            return
+
+        worker = LiveTrafficWorker(
+            interface_index=interface_index,
+            duration_seconds=duration_seconds,
+        )
+
+        self.live_traffic_worker = worker
+
+        worker.signals.sample.connect(
+            self._on_live_traffic_sample
+        )
+
+        worker.signals.status.connect(
+            self.anomaly_page.status_label.setText
+        )
+
+        worker.signals.error.connect(
+            self._on_live_traffic_error
+        )
+
+        worker.signals.finished.connect(
+            self._on_live_traffic_finished
+        )
+
+        self.thread_pool.start(worker)
+
+
+    def _stop_live_monitoring(self) -> None:
+        """Kullanıcı isteğiyle canlı izlemeyi durdurur."""
+
+        if self.live_traffic_worker is not None:
+            self.live_traffic_worker.stop()
+
+
+    def _on_live_traffic_sample(
+        self,
+        sample: dict,
+    ) -> None:
+        """Worker'dan gelen canlı metrikleri GUI'ye aktarır."""
+
+        elapsed = int(
+            sample.get(
+                "elapsed_seconds",
+                0,
+            )
+        )
+
+        duration = int(
+            sample.get(
+                "duration_seconds",
+                0,
+            )
+        )
+
+        elapsed_text = (
+            f"{elapsed // 60:02d}:"
+            f"{elapsed % 60:02d}"
+            f" / "
+            f"{duration // 60:02d}:"
+            f"{duration % 60:02d}"
+        )
+
+        total_packets = int(
+            sample.get(
+                "total_packets",
+                0,
+            )
+        )
+
+        pps = float(
+            sample.get(
+                "packets_per_second",
+                0,
+            )
+        )
+
+        mbps = float(
+            sample.get(
+                "current_mbps",
+                0,
+            )
+        )
+
+        total_bytes = int(
+            sample.get(
+                "total_bytes",
+                0,
+            )
+        )
+
+        peak_mbps = float(
+            sample.get(
+                "peak_mbps",
+                0,
+            )
+        )
+
+        total_mb = (
+            total_bytes
+            / 1024
+            / 1024
+        )
+
+        self.anomaly_page.elapsed_value.setText(
+            elapsed_text
+        )
+
+        self.anomaly_page.packet_value.setText(
+            f"{total_packets:,}"
+        )
+
+        self.anomaly_page.pps_value.setText(
+            f"{pps:,.0f}"
+        )
+
+        self.anomaly_page.traffic_value.setText(
+            f"{mbps:.2f} Mbps"
+        )
+
+        self.anomaly_page.total_data_value.setText(
+            f"{total_mb:.2f} MB"
+        )
+
+        self.anomaly_page.peak_value.setText(
+            f"{peak_mbps:.2f} Mbps"
+        )
+
+
+    def _on_live_traffic_error(
+        self,
+        message: str,
+    ) -> None:
+        """Canlı izleme hatasını kullanıcıya gösterir."""
+
+        self.anomaly_page.status_label.setText(
+            message
+        )
+
+        QMessageBox.critical(
+            self,
+            "Anomaly Monitor",
+            message,
+        )
+
+
+    def _on_live_traffic_finished(
+        self,
+    ) -> None:
+        """Canlı trafik worker'ı sona erdiğinde GUI'yi sıfırlar."""
+
+        self.live_traffic_worker = None
+
+        self.anomaly_page.start_button.setEnabled(
+            True
+        )
+
+        self.anomaly_page.stop_button.setEnabled(
+            False
         )
