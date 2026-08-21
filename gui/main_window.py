@@ -30,6 +30,7 @@ from gui.pages.wifi_page import WifiPage
 from gui.pages.anomaly_page import AnomalyPage
 from gui.live_traffic_worker import LiveTrafficWorker
 from src.anomaly_engine import (
+    CollectiveAnomalyDetector,
     ContextualAnomalyDetector,
     PointAnomalyDetector,
 )
@@ -81,6 +82,11 @@ class MainWindow(QMainWindow):
         )
         self.last_contextual_anomaly_time = 0.0
         self.contextual_anomaly_cooldown = 15.0
+        self.collective_anomaly_detector = (
+            CollectiveAnomalyDetector()
+        )
+        self.last_collective_anomaly_time = 0.0
+        self.collective_anomaly_cooldown = 30.0
 
         self._build_ui()
         self._connect_page_signals()
@@ -585,6 +591,8 @@ class MainWindow(QMainWindow):
         self.last_point_anomaly_time = 0.0
         self.contextual_anomaly_detector.reset()
         self.last_contextual_anomaly_time = 0.0
+        self.collective_anomaly_detector.reset()
+        self.last_collective_anomaly_time = 0.0
         self.anomaly_page.clear_findings()
 
         interface_text = (
@@ -687,7 +695,10 @@ class MainWindow(QMainWindow):
             )
         )
 
-        self.anomaly_page.traffic_chart.add_value(mbps)
+        self.anomaly_page.traffic_chart.add_value(
+            mbps,
+            elapsed,
+        )
 
         anomaly_result = (self.point_anomaly_detector.add_sample(mbps))
 
@@ -732,6 +743,36 @@ class MainWindow(QMainWindow):
                     baseline=contextual_result.local_mean,
                     z_score=contextual_result.z_score,
                     severity=contextual_result.severity,
+                    detected_at=datetime.now().strftime(
+                        "%H:%M:%S"
+                    ),
+                )
+
+        collective_result = (
+            self.collective_anomaly_detector.add_sample(
+                mbps
+            )
+        )
+
+        if collective_result.is_anomaly:
+            now = time.monotonic()
+            cooldown_passed = (
+                now - self.last_collective_anomaly_time
+                >= self.collective_anomaly_cooldown
+            )
+
+            if cooldown_passed:
+                self.last_collective_anomaly_time = now
+                self.anomaly_page.add_collective_finding(
+                    elapsed_seconds=elapsed,
+                    value=collective_result.value,
+                    short_mean=collective_result.short_mean,
+                    long_mean=collective_result.long_mean,
+                    difference=collective_result.difference,
+                    consecutive_count=(
+                        collective_result.consecutive_count
+                    ),
+                    severity=collective_result.severity,
                     detected_at=datetime.now().strftime(
                         "%H:%M:%S"
                     ),

@@ -21,17 +21,35 @@ class LiveTrafficChart(QWidget):
         self.values: deque[float] = deque(
             maxlen=max_points
         )
+        self.elapsed_values: deque[int] = deque(
+            maxlen=max_points
+        )
+        self.current_elapsed = 0
 
         self.setMinimumHeight(220)
 
-    def add_value(self, value: float) -> None:
+    def add_value(
+        self,
+        value: float,
+        elapsed_seconds: int,
+    ) -> None:
+        """Yeni trafik örneğini oturum zamanı ile birlikte ekler."""
         self.values.append(
             max(0.0, float(value))
+        )
+        self.elapsed_values.append(
+            max(0, int(elapsed_seconds))
+        )
+        self.current_elapsed = max(
+            0,
+            int(elapsed_seconds),
         )
         self.update()
 
     def clear(self) -> None:
         self.values.clear()
+        self.elapsed_values.clear()
+        self.current_elapsed = 0
         self.update()
 
     def paintEvent(self, event) -> None:
@@ -168,32 +186,39 @@ class LiveTrafficChart(QWidget):
             "Mbps",
         )
 
-        if len(values) == 1:
-            x_positions = [
-                chart_rect.right()
-            ]
-        else:
-            step_x = (
-                chart_rect.width()
-                / (
-                    self.max_points - 1
-                )
-            )
+        times = list(self.elapsed_values)
+        window_end = max(
+            self.current_elapsed,
+            1,
+        )
+        window_start = max(
+            0,
+            window_end - self.max_points,
+        )
+        window_duration = max(
+            1,
+            window_end - window_start,
+        )
 
-            missing_points = (
-                self.max_points
-                - len(values)
-            )
+        x_positions = []
 
-            x_positions = [
+        for sample_time in times:
+            relative_position = (
+                sample_time - window_start
+            ) / window_duration
+            relative_position = max(
+                0.0,
+                min(
+                    1.0,
+                    relative_position,
+                ),
+            )
+            x = (
                 chart_rect.left()
-                + step_x
-                * (
-                    missing_points + index
-                )
-                for index
-                in range(len(values))
-            ]
+                + chart_rect.width()
+                * relative_position
+            )
+            x_positions.append(x)
 
         path = QPainterPath()
 
@@ -223,16 +248,29 @@ class LiveTrafficChart(QWidget):
         painter.setPen(traffic_pen)
         painter.drawPath(path)
 
-        painter.setPen(text_color)
-        time_labels = (
-            (-60, 0.0),
-            (-45, 0.25),
-            (-30, 0.50),
-            (-15, 0.75),
-            (0, 1.0),
-        )
+        def format_elapsed(seconds: int) -> str:
+            seconds = max(0, seconds)
+            minutes, remaining_seconds = divmod(
+                seconds,
+                60,
+            )
+            return (
+                f"{minutes:02d}:"
+                f"{remaining_seconds:02d}"
+            )
 
-        for seconds, ratio in time_labels:
+        painter.setPen(text_color)
+        tick_count = 4
+
+        for index in range(tick_count + 1):
+            ratio = index / tick_count
+            tick_time = int(
+                window_start
+                + (
+                    window_end - window_start
+                )
+                * ratio
+            )
             x = (
                 chart_rect.left()
                 + chart_rect.width() * ratio
@@ -246,5 +284,5 @@ class LiveTrafficChart(QWidget):
                     18,
                 ),
                 Qt.AlignmentFlag.AlignCenter,
-                f"{seconds}s",
+                format_elapsed(tick_time),
             )
