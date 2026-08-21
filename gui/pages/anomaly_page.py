@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.live_traffic_monitor import LiveTrafficMonitor
+from gui.widgets.live_traffic_chart import LiveTrafficChart
 
 
 class AnomalyPage(QWidget):
@@ -25,6 +26,7 @@ class AnomalyPage(QWidget):
         super().__init__()
 
         self.monitor = LiveTrafficMonitor()
+        self.traffic_chart = LiveTrafficChart(max_points=60)
 
         self.interface_combo = QComboBox()
 
@@ -72,6 +74,7 @@ class AnomalyPage(QWidget):
         layout.addWidget(description)
         layout.addWidget(self._create_control_panel())
         layout.addWidget(self._create_live_summary())
+        layout.addWidget(self._create_timeline_panel())
 
         self.status_label.setObjectName("moduleStatus")
         layout.addWidget(self.status_label)
@@ -224,3 +227,43 @@ class AnomalyPage(QWidget):
         )
 
         self.stop_requested.emit()
+
+    def _create_timeline_panel(
+            self,
+        ) -> QFrame:
+            panel = QFrame()
+            panel.setObjectName(
+                "contentCard"
+            )
+
+            layout = QVBoxLayout(panel)
+            layout.setContentsMargins(
+                18,
+                18,
+                18,
+                18,
+            )
+            layout.setSpacing(12)
+
+            heading = QLabel(
+                "Live Traffic Timeline"
+            )
+            heading.setObjectName(
+                "sectionTitle"
+            )
+
+            description = QLabel(
+                "Son 60 saniyelik anlık trafik "
+                "seviyesi (Mbps)."
+            )
+            description.setObjectName(
+                "pageDescription"
+            )
+
+            layout.addWidget(heading)
+            layout.addWidget(description)
+            layout.addWidget(
+                self.traffic_chart
+            )
+
+            return panel

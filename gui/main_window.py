@@ -547,7 +547,25 @@ class MainWindow(QMainWindow):
         duration_seconds: int,
     ) -> None:
         """Anomaly Monitor canlı trafik worker'ını başlatır."""
-
+        self.anomaly_page.traffic_chart.clear()
+        self.anomaly_page.elapsed_value.setText(
+            "00:00"
+        )
+        self.anomaly_page.packet_value.setText(
+            "0"
+        )
+        self.anomaly_page.pps_value.setText(
+            "0"
+        )
+        self.anomaly_page.traffic_value.setText(
+            "0.00 Mbps"
+        )
+        self.anomaly_page.total_data_value.setText(
+            "0 MB"
+        )
+        self.anomaly_page.peak_value.setText(
+            "0.00 Mbps"
+        )
         if self.live_traffic_worker is not None:
             return
 
@@ -632,6 +650,9 @@ class MainWindow(QMainWindow):
                 0,
             )
         )
+
+        self.anomaly_page.traffic_chart.add_value(mbps)
+
 
         total_bytes = int(
             sample.get(
