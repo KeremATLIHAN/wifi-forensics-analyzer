@@ -16,6 +16,7 @@ reports/
 build/
 dist/
 *.spec
+CyberLab-v*-Windows-x64.zip
 
 # IDE / OS
 .vscode/
