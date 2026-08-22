@@ -919,6 +919,265 @@ def export_json_report(
     return output_path
 
 
+def save_anomaly_json_report(
+    session: dict[str, Any],
+    output_file: Path,
+) -> Path:
+    """Canlı anomaly session verisini JSON olarak kaydeder."""
+
+    ensure_directory(output_file.parent)
+    with output_file.open("w", encoding="utf-8") as file:
+        json.dump(
+            session,
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
+    return output_file
+
+
+def save_anomaly_pdf_report(
+    session: dict[str, Any],
+    output_file: Path,
+) -> Path:
+    """Canlı anomaly session verisini ReportLab PDF olarak kaydeder."""
+
+    ensure_directory(output_file.parent)
+    regular_font, bold_font = _register_cyberlab_pdf_fonts()
+    styles = getSampleStyleSheet()
+    body_style = ParagraphStyle(
+        "AnomalyBody",
+        parent=styles["BodyText"],
+        fontName=regular_font,
+        fontSize=9,
+        leading=11,
+    )
+    heading_style = ParagraphStyle(
+        "AnomalyHeading",
+        parent=styles["Heading1"],
+        fontName=bold_font,
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor("#0F172A"),
+    )
+    title_style = ParagraphStyle(
+        "CyberLabAnomalyTitle",
+        parent=styles["Title"],
+        fontName=bold_font,
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor("#0F172A"),
+        spaceAfter=2 * mm,
+    )
+    subtitle_style = ParagraphStyle(
+        "CyberLabAnomalySubtitle",
+        parent=styles["BodyText"],
+        fontName=regular_font,
+        fontSize=9,
+        leading=11,
+        textColor=colors.HexColor("#64748B"),
+        spaceAfter=5 * mm,
+    )
+
+    doc = SimpleDocTemplate(
+        str(output_file),
+        pagesize=landscape(A4),
+        leftMargin=12 * mm,
+        rightMargin=12 * mm,
+        topMargin=12 * mm,
+        bottomMargin=16 * mm,
+        title="CyberLab Anomaly Session Report",
+        author="CyberLab Desktop Security Suite",
+    )
+    story: list[Any] = []
+    logo_path = (
+        PROJECT_ROOT
+        / "resources"
+        / "logo"
+        / "cyberlab_logo.png"
+    )
+    if logo_path.exists():
+        logo = Image(
+            str(logo_path),
+            width=34 * mm,
+            height=18 * mm,
+        )
+        logo.hAlign = "LEFT"
+        story.append(logo)
+        story.append(Spacer(1, 3 * mm))
+
+    story.extend(
+        [
+            Paragraph(
+                "CyberLab Anomaly Monitoring Report",
+                title_style,
+            ),
+            Paragraph(
+                "Live Network Traffic & Anomaly Detection Session",
+                subtitle_style,
+            ),
+        ]
+    )
+    story.extend(
+        [
+        _pdf_paragraph(
+            f"Interface: {session.get('interface', '—')}",
+            body_style,
+        ),
+        Spacer(1, 5 * mm),
+        ]
+    )
+
+    summary = session.get("summary") or {
+        "duration": session.get("duration_text", "00:00"),
+        "total_packets": session.get("total_packets", 0),
+        "total_data": session.get("total_data_text", "0 MB"),
+        "peak": session.get("peak_text", "0.00 Mbps"),
+        "point": session.get("point_count", 0),
+        "contextual": session.get("contextual_count", 0),
+        "collective": session.get("collective_count", 0),
+        "total_anomalies": session.get("total_findings", 0),
+    }
+    summary_cards = [
+        ["Interface", session.get("interface", "—")],
+        ["Duration", summary.get("duration", "00:00")],
+        [
+            "Total Packets",
+            f"{int(summary.get('total_packets', 0)):,}",
+        ],
+        ["Total Data", summary.get("total_data", "0 MB")],
+        ["Peak", summary.get("peak", "0.00 Mbps")],
+        [
+            "Total Findings",
+            str(summary.get("total_anomalies", 0)),
+        ],
+    ]
+    summary_table = Table(
+        summary_cards,
+        colWidths=[45 * mm, 120 * mm],
+        hAlign="LEFT",
+    )
+    summary_table.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#CBD5E1")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#E2E8F0")),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F8FAFC")),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#475569")),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    story.append(summary_table)
+    story.append(Spacer(1, 8 * mm))
+    story.append(Paragraph("Anomaly Findings", styles["Heading2"]))
+
+    findings = session.get("findings", [])
+    if not findings:
+        story.append(
+            Paragraph(
+                "No anomaly findings were produced.",
+                body_style,
+            )
+        )
+    else:
+        finding_rows = [
+            [
+                "Type",
+                "Severity",
+                "Time",
+                "Observed",
+                "Baseline / Context",
+            ]
+        ]
+        for finding in findings:
+            finding_rows.append(
+                [
+                    str(finding.get("type", "—")).upper(),
+                    str(finding.get("severity", "—")).upper(),
+                    str(finding.get("elapsed_seconds", 0)),
+                    f"{float(finding.get('value_mbps', 0)):.2f} Mbps",
+                    str(
+                        finding.get(
+                            "baseline_mbps",
+                            finding.get("long_mean_mbps", "—"),
+                        )
+                    ),
+                ]
+            )
+        findings_table = Table(
+            finding_rows,
+            repeatRows=1,
+            colWidths=[30 * mm, 30 * mm, 22 * mm, 38 * mm, 45 * mm],
+            hAlign="LEFT",
+        )
+        findings_style = [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E2E8F0")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#334155")),
+            ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#CBD5E1")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]
+        for row_index, finding in enumerate(findings, start=1):
+            severity = str(finding.get("severity", "info")).lower()
+            if severity == "critical":
+                background = colors.HexColor("#FEE2E2")
+                foreground = colors.HexColor("#B91C1C")
+            elif severity == "warning":
+                background = colors.HexColor("#FEF3C7")
+                foreground = colors.HexColor("#B45309")
+            else:
+                background = colors.HexColor("#DBEAFE")
+                foreground = colors.HexColor("#1D4ED8")
+            findings_style.extend(
+                [
+                    ("BACKGROUND", (1, row_index), (1, row_index), background),
+                    ("TEXTCOLOR", (1, row_index), (1, row_index), foreground),
+                ]
+            )
+        findings_table.setStyle(
+            TableStyle(findings_style)
+        )
+        story.append(findings_table)
+
+    story.append(Spacer(1, 6 * mm))
+    note = Paragraph(
+        "<b>Analiz Notu:</b> Bu rapor, izleme oturumu sırasında "
+        "gözlemlenen trafik davranışlarından otomatik olarak "
+        "üretilmiştir. Bir anomali, tek başına saldırı veya "
+        "güvenlik ihlali kanıtı değildir.",
+        body_style,
+    )
+    note_table = Table(
+        [[note]],
+        colWidths=[165 * mm],
+        hAlign="LEFT",
+    )
+    note_table.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#CBD5E1")),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ]
+        )
+    )
+    story.append(note_table)
+
+    doc.build(story)
+    return output_file
+
+
 def save_pdf_report(
     report: dict[str, Any],
     output_file: Path,

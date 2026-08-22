@@ -294,6 +294,29 @@ QFrame#findingCard {
     border-radius: 9px;
 }
 
+QFrame#anomalyFindingCard {
+    background-color: #0F1B2D;
+    border: 1px solid #29405E;
+    border-radius: 10px;
+}
+
+QFrame#statusBarCard {
+    background-color: #0B1524;
+    border: 1px solid #24364E;
+    border-radius: 8px;
+}
+
+QLabel#sessionStatusText {
+    color: #2DD4BF;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+QLabel#sessionMetaText {
+    color: #94A3B8;
+    font-size: 11px;
+}
+
 QLabel#findingDescription {
     color: #CBD5E1;
     font-size: 12px;

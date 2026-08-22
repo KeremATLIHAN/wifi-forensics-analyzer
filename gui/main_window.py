@@ -5,12 +5,18 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 from datetime import datetime
+import os
+import subprocess
 import time
 from time import perf_counter
 
 from PySide6.QtCore import QThreadPool
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QMessageBox, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QMessageBox,
+    QTableWidgetItem,
+)
 
 from gui.worker import AnalysisWorker
 from PySide6.QtCore import Qt
@@ -29,6 +35,10 @@ from gui.pages.dashboard_page import DashboardPage
 from gui.pages.wifi_page import WifiPage
 from gui.pages.anomaly_page import AnomalyPage
 from gui.live_traffic_worker import LiveTrafficWorker
+from src.reporters import (
+    save_anomaly_json_report,
+    save_anomaly_pdf_report,
+)
 from src.anomaly_engine import (
     CollectiveAnomalyDetector,
     ContextualAnomalyDetector,
@@ -87,6 +97,10 @@ class MainWindow(QMainWindow):
         )
         self.last_collective_anomaly_time = 0.0
         self.collective_anomaly_cooldown = 30.0
+        self.anomaly_session_samples: list[dict] = []
+        self.anomaly_session_findings: list[dict] = []
+        self.anomaly_session_started_at: datetime | None = None
+        self.anomaly_session_interface = ""
 
         self._build_ui()
         self._connect_page_signals()
@@ -132,6 +146,12 @@ class MainWindow(QMainWindow):
 
         self.anomaly_page.stop_requested.connect(
             self._stop_live_monitoring
+        )
+        self.anomaly_page.export_json_requested.connect(
+            self._export_anomaly_json
+        )
+        self.anomaly_page.export_pdf_requested.connect(
+            self._export_anomaly_pdf
         )
 
     def _create_sidebar(self) -> QFrame:
@@ -586,6 +606,13 @@ class MainWindow(QMainWindow):
         self.anomaly_page.peak_value.setText(
             "0.00 Mbps"
         )
+        self.anomaly_page.reset_session_summary()
+        self.anomaly_session_samples = []
+        self.anomaly_session_findings = []
+        self.anomaly_session_started_at = datetime.now()
+        self.anomaly_session_interface = (
+            self.anomaly_page.interface_combo.currentText()
+        )
 
         self.point_anomaly_detector.reset()
         self.last_point_anomaly_time = 0.0
@@ -711,15 +738,45 @@ class MainWindow(QMainWindow):
 
             if cooldown_passed:
                 self.last_point_anomaly_time = now
-                self.anomaly_page.add_point_finding(
-                    elapsed_seconds=elapsed,
-                    value=anomaly_result.value,
-                    baseline=anomaly_result.baseline_mean,
-                    z_score=anomaly_result.z_score,
+                self.anomaly_session_findings.append(
+                    {
+                        "type": "point",
+                        "severity": anomaly_result.severity,
+                        "elapsed_seconds": elapsed,
+                        "value_mbps": anomaly_result.value,
+                        "baseline_mbps": anomaly_result.baseline_mean,
+                        "z_score": anomaly_result.z_score,
+                        "detected_at": datetime.now().isoformat(
+                            timespec="seconds"
+                        ),
+                    }
+                )
+                self.anomaly_page.add_anomaly_finding(
+                    anomaly_type="POINT",
+                    title="Point Anomaly",
+                    description="Ani trafik sapması tespit edildi.",
                     severity=anomaly_result.severity,
                     detected_at=datetime.now().strftime(
                         "%H:%M:%S"
                     ),
+                    metrics=[
+                        (
+                            "Zaman",
+                            f"{elapsed // 60:02d}:{elapsed % 60:02d}",
+                        ),
+                        (
+                            "Gözlenen",
+                            f"{anomaly_result.value:.2f} Mbps",
+                        ),
+                        (
+                            "Baseline",
+                            f"{anomaly_result.baseline_mean:.2f} Mbps",
+                        ),
+                        (
+                            "Z-Score",
+                            f"{anomaly_result.z_score:.2f}",
+                        ),
+                    ],
                 )
 
         contextual_result = (
@@ -737,15 +794,48 @@ class MainWindow(QMainWindow):
 
             if cooldown_passed:
                 self.last_contextual_anomaly_time = now
-                self.anomaly_page.add_contextual_finding(
-                    elapsed_seconds=elapsed,
-                    value=contextual_result.value,
-                    baseline=contextual_result.local_mean,
-                    z_score=contextual_result.z_score,
+                self.anomaly_session_findings.append(
+                    {
+                        "type": "contextual",
+                        "severity": contextual_result.severity,
+                        "elapsed_seconds": elapsed,
+                        "value_mbps": contextual_result.value,
+                        "baseline_mbps": contextual_result.local_mean,
+                        "z_score": contextual_result.z_score,
+                        "detected_at": datetime.now().isoformat(
+                            timespec="seconds"
+                        ),
+                    }
+                )
+                self.anomaly_page.add_anomaly_finding(
+                    anomaly_type="CONTEXTUAL",
+                    title="Contextual Anomaly",
+                    description=(
+                        "Trafik seviyesi mevcut oturum bağlamına "
+                        "göre beklenmeyen sapma gösterdi."
+                    ),
                     severity=contextual_result.severity,
                     detected_at=datetime.now().strftime(
                         "%H:%M:%S"
                     ),
+                    metrics=[
+                        (
+                            "Zaman",
+                            f"{elapsed // 60:02d}:{elapsed % 60:02d}",
+                        ),
+                        (
+                            "Gözlenen",
+                            f"{contextual_result.value:.2f} Mbps",
+                        ),
+                        (
+                            "Yerel Baseline",
+                            f"{contextual_result.local_mean:.2f} Mbps",
+                        ),
+                        (
+                            "Z-Score",
+                            f"{contextual_result.z_score:.2f}",
+                        ),
+                    ],
                 )
 
         collective_result = (
@@ -763,19 +853,56 @@ class MainWindow(QMainWindow):
 
             if cooldown_passed:
                 self.last_collective_anomaly_time = now
-                self.anomaly_page.add_collective_finding(
-                    elapsed_seconds=elapsed,
-                    value=collective_result.value,
-                    short_mean=collective_result.short_mean,
-                    long_mean=collective_result.long_mean,
-                    difference=collective_result.difference,
-                    consecutive_count=(
-                        collective_result.consecutive_count
+                self.anomaly_session_findings.append(
+                    {
+                        "type": "collective",
+                        "severity": collective_result.severity,
+                        "elapsed_seconds": elapsed,
+                        "value_mbps": collective_result.value,
+                        "short_mean_mbps": collective_result.short_mean,
+                        "long_mean_mbps": collective_result.long_mean,
+                        "difference_mbps": collective_result.difference,
+                        "consecutive_count": (
+                            collective_result.consecutive_count
+                        ),
+                        "detected_at": datetime.now().isoformat(
+                            timespec="seconds"
+                        ),
+                    }
+                )
+                self.anomaly_page.add_anomaly_finding(
+                    anomaly_type="COLLECTIVE",
+                    title="Collective Anomaly",
+                    description=(
+                        "Trafik seviyesi belirli bir süre boyunca "
+                        "baseline üzerinde kaldı."
                     ),
                     severity=collective_result.severity,
                     detected_at=datetime.now().strftime(
                         "%H:%M:%S"
                     ),
+                    metrics=[
+                        (
+                            "Anlık",
+                            f"{collective_result.value:.2f} Mbps",
+                        ),
+                        (
+                            "Kısa Ort.",
+                            f"{collective_result.short_mean:.2f} Mbps",
+                        ),
+                        (
+                            "Uzun Ort.",
+                            f"{collective_result.long_mean:.2f} Mbps",
+                        ),
+                        (
+                            "Fark",
+                            f"+{collective_result.difference:.2f} Mbps",
+                        ),
+                        (
+                            "Süreklilik",
+                            f"{collective_result.consecutive_count} sn",
+                        ),
+                    ],
                 )
 
         total_bytes = int(
@@ -796,6 +923,20 @@ class MainWindow(QMainWindow):
             total_bytes
             / 1024
             / 1024
+        )
+
+        self.anomaly_session_samples.append(
+            {
+                "elapsed_seconds": elapsed,
+                "total_packets": total_packets,
+                "packets_per_second": pps,
+                "current_mbps": mbps,
+                "total_bytes": total_bytes,
+                "peak_mbps": peak_mbps,
+                "timestamp": datetime.now().isoformat(
+                    timespec="seconds"
+                ),
+            }
         )
 
         self.anomaly_page.elapsed_value.setText(
@@ -824,6 +965,167 @@ class MainWindow(QMainWindow):
         self.anomaly_page.peak_value.setText(
             f"{peak_mbps:.2f} Mbps"
         )
+        summary_elapsed = (
+            f"{elapsed // 60:02d}:"
+            f"{elapsed % 60:02d}"
+        )
+        self.anomaly_page.summary_duration_value.setText(
+            summary_elapsed
+        )
+        self.anomaly_page.summary_packets_value.setText(
+            f"{total_packets:,}"
+        )
+        self.anomaly_page.summary_data_value.setText(
+            f"{total_mb:.2f} MB"
+        )
+        self.anomaly_page.summary_peak_value.setText(
+            f"{peak_mbps:.2f} Mbps"
+        )
+
+    def _build_anomaly_session_report(self) -> dict[str, Any]:
+        """Mevcut anomaly monitoring oturumunu rapor formatına dönüştürür."""
+        samples = self.anomaly_session_samples
+        findings = self.anomaly_session_findings
+        if samples:
+            last_sample = samples[-1]
+            elapsed = int(last_sample.get("elapsed_seconds", 0))
+            total_packets = int(last_sample.get("total_packets", 0))
+            total_bytes = int(last_sample.get("total_bytes", 0))
+            peak_mbps = float(last_sample.get("peak_mbps", 0))
+        else:
+            elapsed = 0
+            total_packets = 0
+            total_bytes = 0
+            peak_mbps = 0.0
+
+        duration_text = f"{elapsed // 60:02d}:{elapsed % 60:02d}"
+        total_mb = total_bytes / 1024 / 1024
+        return {
+            "module": "Anomaly Monitor",
+            "interface": self.anomaly_session_interface,
+            "started_at": (
+                self.anomaly_session_started_at.isoformat(
+                    timespec="seconds"
+                )
+                if self.anomaly_session_started_at is not None
+                else None
+            ),
+            "ended_at": datetime.now().isoformat(timespec="seconds"),
+            "duration_seconds": elapsed,
+            "duration_text": duration_text,
+            "total_packets": total_packets,
+            "total_bytes": total_bytes,
+            "total_data_text": f"{total_mb:.2f} MB",
+            "peak_mbps": peak_mbps,
+            "peak_text": f"{peak_mbps:.2f} Mbps",
+            "point_count": self.anomaly_page.point_count,
+            "contextual_count": self.anomaly_page.contextual_count,
+            "collective_count": self.anomaly_page.collective_count,
+            "total_findings": len(findings),
+            "findings": findings,
+            "samples": samples,
+        }
+
+    def _export_anomaly_json(self) -> None:
+        """Anomaly monitoring session'ını JSON olarak kaydeder."""
+        if not self.anomaly_session_samples:
+            QMessageBox.information(
+                self,
+                "Anomaly Monitor",
+                "Kaydedilecek bir izleme oturumu bulunmuyor.",
+            )
+            return
+        output_file, _ = QFileDialog.getSaveFileName(
+            self,
+            "Anomaly JSON Raporunu Kaydet",
+            "cyberlab_anomaly_report.json",
+            "JSON Files (*.json)",
+        )
+        if not output_file:
+            return
+        path = Path(output_file).with_suffix(".json")
+        try:
+            save_anomaly_json_report(
+                self._build_anomaly_session_report(),
+                path,
+            )
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Rapor Hatası",
+                f"JSON raporu oluşturulamadı.\n\n{exc}",
+            )
+            return
+        reply = QMessageBox.question(
+            self,
+            "Rapor Kaydedildi",
+            "Anomaly JSON raporu başarıyla kaydedildi.\n\n"
+            f"{path}\n\n"
+            "Dosyayı şimdi görüntülemek ister misiniz?",
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._open_saved_file(path)
+
+    def _export_anomaly_pdf(self) -> None:
+        """Anomaly monitoring session'ını PDF olarak kaydeder."""
+        if not self.anomaly_session_samples:
+            QMessageBox.information(
+                self,
+                "Anomaly Monitor",
+                "Kaydedilecek bir izleme oturumu bulunmuyor.",
+            )
+            return
+        output_file, _ = QFileDialog.getSaveFileName(
+            self,
+            "Anomaly PDF Raporunu Kaydet",
+            "cyberlab_anomaly_report.pdf",
+            "PDF Files (*.pdf)",
+        )
+        if not output_file:
+            return
+        path = Path(output_file).with_suffix(".pdf")
+        try:
+            save_anomaly_pdf_report(
+                self._build_anomaly_session_report(),
+                path,
+            )
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Rapor Hatası",
+                f"PDF raporu oluşturulamadı.\n\n{exc}",
+            )
+            return
+        reply = QMessageBox.question(
+            self,
+            "Rapor Kaydedildi",
+            "Anomaly PDF raporu başarıyla kaydedildi.\n\n"
+            f"{path}\n\n"
+            "Dosyayı şimdi görüntülemek ister misiniz?",
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._open_saved_file(path)
+
+    def _open_saved_file(self, path: Path) -> None:
+        """Kaydedilen raporu varsayılan uygulamayla açar."""
+        try:
+            if os.name == "nt":
+                os.startfile(str(path))  # type: ignore[attr-defined]
+                return
+            subprocess.Popen(["xdg-open", str(path)])
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                "Dosya Açılamadı",
+                "Dosya kaydedildi ancak otomatik olarak açılamadı.\n\n"
+                f"{exc}",
+            )
 
 
     def _on_live_traffic_error(
@@ -859,6 +1161,13 @@ class MainWindow(QMainWindow):
 
         self.anomaly_page.stop_button.setEnabled(
             False
+        )
+        has_session_data = bool(self.anomaly_session_samples)
+        self.anomaly_page.export_json_button.setEnabled(
+            has_session_data
+        )
+        self.anomaly_page.export_pdf_button.setEnabled(
+            has_session_data
         )
         self.anomaly_page.session_status_label.setText(
             "İzleme tamamlandı."

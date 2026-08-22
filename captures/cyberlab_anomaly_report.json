@@ -1,0 +1,1038 @@
+{
+  "module": "Anomaly Monitor",
+  "interface": "Wi-Fi (\\Device\\NPF_{5BBBF864-C7DB-48D5-82CA-907806126751})",
+  "started_at": "2026-08-22T03:30:51",
+  "ended_at": "2026-08-22T03:34:52",
+  "duration_seconds": 119,
+  "duration_text": "01:59",
+  "total_packets": 101812,
+  "total_bytes": 92729474,
+  "total_data_text": "88.43 MB",
+  "peak_mbps": 50.793608,
+  "peak_text": "50.79 Mbps",
+  "point_count": 3,
+  "contextual_count": 2,
+  "collective_count": 0,
+  "total_findings": 5,
+  "findings": [
+    {
+      "type": "point",
+      "severity": "critical",
+      "elapsed_seconds": 25,
+      "value_mbps": 11.567192,
+      "baseline_mbps": 1.1196881237096712,
+      "z_score": 7.299314895891056,
+      "detected_at": "2026-08-22T03:31:16"
+    },
+    {
+      "type": "point",
+      "severity": "info",
+      "elapsed_seconds": 41,
+      "value_mbps": 30.044832,
+      "baseline_mbps": 3.6479318790680577,
+      "z_score": 3.698112287184127,
+      "detected_at": "2026-08-22T03:31:33"
+    },
+    {
+      "type": "contextual",
+      "severity": "info",
+      "elapsed_seconds": 41,
+      "value_mbps": 30.044832,
+      "baseline_mbps": 3.6479318790680577,
+      "z_score": 3.698112287184127,
+      "detected_at": "2026-08-22T03:31:33"
+    },
+    {
+      "type": "point",
+      "severity": "info",
+      "elapsed_seconds": 114,
+      "value_mbps": 26.701136,
+      "baseline_mbps": 4.826855494933648,
+      "z_score": 3.4563261504140974,
+      "detected_at": "2026-08-22T03:32:46"
+    },
+    {
+      "type": "contextual",
+      "severity": "info",
+      "elapsed_seconds": 114,
+      "value_mbps": 26.701136,
+      "baseline_mbps": 5.13848811305164,
+      "z_score": 2.9506079653932167,
+      "detected_at": "2026-08-22T03:32:46"
+    }
+  ],
+  "samples": [
+    {
+      "elapsed_seconds": 2,
+      "total_packets": 1,
+      "packets_per_second": 0.47058823529411764,
+      "current_mbps": 0.0002672941176470588,
+      "total_bytes": 71,
+      "peak_mbps": 0.0002672941176470588,
+      "timestamp": "2026-08-22T03:30:53"
+    },
+    {
+      "elapsed_seconds": 3,
+      "total_packets": 23,
+      "packets_per_second": 14.369693011488467,
+      "current_mbps": 0.04429000653286409,
+      "total_bytes": 8547,
+      "peak_mbps": 0.04429000653286409,
+      "timestamp": "2026-08-22T03:30:54"
+    },
+    {
+      "elapsed_seconds": 4,
+      "total_packets": 30,
+      "packets_per_second": 6.889763779110734,
+      "current_mbps": 0.003874015747797121,
+      "total_bytes": 9039,
+      "peak_mbps": 0.04429000653286409,
+      "timestamp": "2026-08-22T03:30:55"
+    },
+    {
+      "elapsed_seconds": 5,
+      "total_packets": 34,
+      "packets_per_second": 3.460207612579406,
+      "current_mbps": 0.010650519031519411,
+      "total_bytes": 10578,
+      "peak_mbps": 0.04429000653286409,
+      "timestamp": "2026-08-22T03:30:57"
+    },
+    {
+      "elapsed_seconds": 6,
+      "total_packets": 430,
+      "packets_per_second": 342.56055364536115,
+      "current_mbps": 2.4549204153119364,
+      "total_bytes": 365314,
+      "peak_mbps": 2.4549204153119364,
+      "timestamp": "2026-08-22T03:30:58"
+    },
+    {
+      "elapsed_seconds": 7,
+      "total_packets": 447,
+      "packets_per_second": 17.0,
+      "current_mbps": 0.074104,
+      "total_bytes": 374577,
+      "peak_mbps": 2.4549204153119364,
+      "timestamp": "2026-08-22T03:30:59"
+    },
+    {
+      "elapsed_seconds": 9,
+      "total_packets": 765,
+      "packets_per_second": 248.0499219956185,
+      "current_mbps": 0.8868767550656929,
+      "total_bytes": 516699,
+      "peak_mbps": 2.4549204153119364,
+      "timestamp": "2026-08-22T03:31:00"
+    },
+    {
+      "elapsed_seconds": 10,
+      "total_packets": 1149,
+      "packets_per_second": 384.0,
+      "current_mbps": 2.33044,
+      "total_bytes": 808004,
+      "peak_mbps": 2.4549204153119364,
+      "timestamp": "2026-08-22T03:31:01"
+    },
+    {
+      "elapsed_seconds": 11,
+      "total_packets": 1684,
+      "packets_per_second": 482.41659149999293,
+      "current_mbps": 2.832656447109424,
+      "total_bytes": 1200681,
+      "peak_mbps": 2.832656447109424,
+      "timestamp": "2026-08-22T03:31:02"
+    },
+    {
+      "elapsed_seconds": 12,
+      "total_packets": 2037,
+      "packets_per_second": 342.38603299130006,
+      "current_mbps": 1.0547352085773243,
+      "total_bytes": 1336610,
+      "peak_mbps": 2.832656447109424,
+      "timestamp": "2026-08-22T03:31:03"
+    },
+    {
+      "elapsed_seconds": 13,
+      "total_packets": 2336,
+      "packets_per_second": 269.3693693727595,
+      "current_mbps": 0.9045765765879611,
+      "total_bytes": 1462120,
+      "peak_mbps": 2.832656447109424,
+      "timestamp": "2026-08-22T03:31:04"
+    },
+    {
+      "elapsed_seconds": 14,
+      "total_packets": 2366,
+      "packets_per_second": 29.097963140450954,
+      "current_mbps": 0.0971018428638942,
+      "total_bytes": 1474634,
+      "peak_mbps": 2.832656447109424,
+      "timestamp": "2026-08-22T03:31:05"
+    },
+    {
+      "elapsed_seconds": 15,
+      "total_packets": 3068,
+      "packets_per_second": 680.8923375634353,
+      "current_mbps": 4.9939010671238035,
+      "total_bytes": 2118223,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:06"
+    },
+    {
+      "elapsed_seconds": 16,
+      "total_packets": 3092,
+      "packets_per_second": 22.577610536950143,
+      "current_mbps": 0.10112511759499969,
+      "total_bytes": 2131660,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:07"
+    },
+    {
+      "elapsed_seconds": 17,
+      "total_packets": 3097,
+      "packets_per_second": 3.855050115590604,
+      "current_mbps": 0.023555898226304828,
+      "total_bytes": 2135479,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:09"
+    },
+    {
+      "elapsed_seconds": 18,
+      "total_packets": 3106,
+      "packets_per_second": 8.604206501178188,
+      "current_mbps": 0.011839388145621188,
+      "total_bytes": 2137027,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:10"
+    },
+    {
+      "elapsed_seconds": 20,
+      "total_packets": 3117,
+      "packets_per_second": 10.054844606570358,
+      "current_mbps": 0.06759049359893077,
+      "total_bytes": 2146270,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:11"
+    },
+    {
+      "elapsed_seconds": 21,
+      "total_packets": 3286,
+      "packets_per_second": 154.4789762282173,
+      "current_mbps": 0.6797367458611934,
+      "total_bytes": 2239224,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:12"
+    },
+    {
+      "elapsed_seconds": 22,
+      "total_packets": 3956,
+      "packets_per_second": 670.0,
+      "current_mbps": 4.133096,
+      "total_bytes": 2755861,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:13"
+    },
+    {
+      "elapsed_seconds": 23,
+      "total_packets": 4297,
+      "packets_per_second": 298.86064856829256,
+      "current_mbps": 1.9918808064061788,
+      "total_bytes": 3039953,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:14"
+    },
+    {
+      "elapsed_seconds": 24,
+      "total_packets": 4482,
+      "packets_per_second": 185.0,
+      "current_mbps": 0.816232,
+      "total_bytes": 3141982,
+      "peak_mbps": 4.9939010671238035,
+      "timestamp": "2026-08-22T03:31:15"
+    },
+    {
+      "elapsed_seconds": 25,
+      "total_packets": 6182,
+      "packets_per_second": 1700.0,
+      "current_mbps": 11.567192,
+      "total_bytes": 4587881,
+      "peak_mbps": 11.567192,
+      "timestamp": "2026-08-22T03:31:16"
+    },
+    {
+      "elapsed_seconds": 26,
+      "total_packets": 11207,
+      "packets_per_second": 4407.89473678809,
+      "current_mbps": 34.28358596449216,
+      "total_bytes": 9473292,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:17"
+    },
+    {
+      "elapsed_seconds": 27,
+      "total_packets": 11544,
+      "packets_per_second": 295.3549518108932,
+      "current_mbps": 2.8673163892704236,
+      "total_bytes": 9882243,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:18"
+    },
+    {
+      "elapsed_seconds": 28,
+      "total_packets": 11576,
+      "packets_per_second": 30.563514803604374,
+      "current_mbps": 0.057222540591048296,
+      "total_bytes": 9889732,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:19"
+    },
+    {
+      "elapsed_seconds": 29,
+      "total_packets": 11591,
+      "packets_per_second": 14.326647564189551,
+      "current_mbps": 0.011774594078088585,
+      "total_bytes": 9891273,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:21"
+    },
+    {
+      "elapsed_seconds": 31,
+      "total_packets": 12919,
+      "packets_per_second": 850.1920614409112,
+      "current_mbps": 6.310693981935045,
+      "total_bytes": 11123436,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:22"
+    },
+    {
+      "elapsed_seconds": 32,
+      "total_packets": 12920,
+      "packets_per_second": 0.7616146230207498,
+      "current_mbps": 0.0003351104341291299,
+      "total_bytes": 11123491,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:23"
+    },
+    {
+      "elapsed_seconds": 34,
+      "total_packets": 12922,
+      "packets_per_second": 1.2430080795100678,
+      "current_mbps": 0.006727159726308487,
+      "total_bytes": 11124844,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:25"
+    },
+    {
+      "elapsed_seconds": 35,
+      "total_packets": 15953,
+      "packets_per_second": 3031.0,
+      "current_mbps": 23.79476,
+      "total_bytes": 14099189,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:26"
+    },
+    {
+      "elapsed_seconds": 36,
+      "total_packets": 17772,
+      "packets_per_second": 1532.4347094571128,
+      "current_mbps": 12.385496209785233,
+      "total_bytes": 15936887,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:27"
+    },
+    {
+      "elapsed_seconds": 37,
+      "total_packets": 17778,
+      "packets_per_second": 4.569687737719334,
+      "current_mbps": 0.011235338917805935,
+      "total_bytes": 15938731,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:28"
+    },
+    {
+      "elapsed_seconds": 38,
+      "total_packets": 19159,
+      "packets_per_second": 1227.5555555555557,
+      "current_mbps": 9.770282666666667,
+      "total_bytes": 17312677,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:30"
+    },
+    {
+      "elapsed_seconds": 39,
+      "total_packets": 19444,
+      "packets_per_second": 280.51181103879287,
+      "current_mbps": 2.6901653544762,
+      "total_bytes": 17654328,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:31"
+    },
+    {
+      "elapsed_seconds": 40,
+      "total_packets": 19541,
+      "packets_per_second": 88.74656907646713,
+      "current_mbps": 0.40737785910581503,
+      "total_bytes": 17709986,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:32"
+    },
+    {
+      "elapsed_seconds": 41,
+      "total_packets": 23539,
+      "packets_per_second": 3998.0,
+      "current_mbps": 30.044832,
+      "total_bytes": 21465590,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:33"
+    },
+    {
+      "elapsed_seconds": 42,
+      "total_packets": 23930,
+      "packets_per_second": 373.447946506541,
+      "current_mbps": 3.042460362882199,
+      "total_bytes": 21863772,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:34"
+    },
+    {
+      "elapsed_seconds": 44,
+      "total_packets": 24272,
+      "packets_per_second": 295.8477508755392,
+      "current_mbps": 2.352373702505533,
+      "total_bytes": 22203690,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:35"
+    },
+    {
+      "elapsed_seconds": 45,
+      "total_packets": 24294,
+      "packets_per_second": 21.317829457229674,
+      "current_mbps": 0.09429457364281518,
+      "total_bytes": 22215854,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:36"
+    },
+    {
+      "elapsed_seconds": 47,
+      "total_packets": 24307,
+      "packets_per_second": 6.256015399484206,
+      "current_mbps": 0.016835418671965807,
+      "total_bytes": 22220227,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:38"
+    },
+    {
+      "elapsed_seconds": 48,
+      "total_packets": 25346,
+      "packets_per_second": 782.379518015775,
+      "current_mbps": 6.223433734490218,
+      "total_bytes": 23253317,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:39"
+    },
+    {
+      "elapsed_seconds": 49,
+      "total_packets": 27123,
+      "packets_per_second": 1777.0,
+      "current_mbps": 14.095248,
+      "total_bytes": 25015223,
+      "peak_mbps": 34.28358596449216,
+      "timestamp": "2026-08-22T03:31:40"
+    },
+    {
+      "elapsed_seconds": 50,
+      "total_packets": 32317,
+      "packets_per_second": 4552.147239483025,
+      "current_mbps": 35.95656441890951,
+      "total_bytes": 30143528,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:42"
+    },
+    {
+      "elapsed_seconds": 51,
+      "total_packets": 32855,
+      "packets_per_second": 435.9805510340711,
+      "current_mbps": 3.278171798881581,
+      "total_bytes": 30649186,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:43"
+    },
+    {
+      "elapsed_seconds": 52,
+      "total_packets": 32888,
+      "packets_per_second": 31.518624644721548,
+      "current_mbps": 0.22949379180708163,
+      "total_bytes": 30679221,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:44"
+    },
+    {
+      "elapsed_seconds": 54,
+      "total_packets": 32896,
+      "packets_per_second": 6.245120998851589,
+      "current_mbps": 0.014188914909390811,
+      "total_bytes": 30681493,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:45"
+    },
+    {
+      "elapsed_seconds": 55,
+      "total_packets": 34293,
+      "packets_per_second": 1397.0,
+      "current_mbps": 11.053968,
+      "total_bytes": 32063239,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:46"
+    },
+    {
+      "elapsed_seconds": 56,
+      "total_packets": 34345,
+      "packets_per_second": 49.66571155585711,
+      "current_mbps": 0.23431518624183295,
+      "total_bytes": 32093905,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:47"
+    },
+    {
+      "elapsed_seconds": 57,
+      "total_packets": 34356,
+      "packets_per_second": 10.669253152703401,
+      "current_mbps": 0.007363724539574929,
+      "total_bytes": 32094854,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:48"
+    },
+    {
+      "elapsed_seconds": 58,
+      "total_packets": 34547,
+      "packets_per_second": 182.42597898401362,
+      "current_mbps": 1.5409665711255272,
+      "total_bytes": 32296528,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:49"
+    },
+    {
+      "elapsed_seconds": 59,
+      "total_packets": 34684,
+      "packets_per_second": 127.08719851818543,
+      "current_mbps": 0.5518218924038092,
+      "total_bytes": 32370886,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:50"
+    },
+    {
+      "elapsed_seconds": 60,
+      "total_packets": 34828,
+      "packets_per_second": 144.0,
+      "current_mbps": 0.854016,
+      "total_bytes": 32477638,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:51"
+    },
+    {
+      "elapsed_seconds": 61,
+      "total_packets": 36460,
+      "packets_per_second": 1632.0,
+      "current_mbps": 12.366968,
+      "total_bytes": 34023509,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:52"
+    },
+    {
+      "elapsed_seconds": 62,
+      "total_packets": 39242,
+      "packets_per_second": 2782.0,
+      "current_mbps": 11.930768,
+      "total_bytes": 35514855,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:53"
+    },
+    {
+      "elapsed_seconds": 63,
+      "total_packets": 41687,
+      "packets_per_second": 2202.702702730425,
+      "current_mbps": 11.907971171321039,
+      "total_bytes": 37167086,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:54"
+    },
+    {
+      "elapsed_seconds": 64,
+      "total_packets": 42995,
+      "packets_per_second": 1250.4780115045635,
+      "current_mbps": 4.6150363289910565,
+      "total_bytes": 37770502,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:55"
+    },
+    {
+      "elapsed_seconds": 65,
+      "total_packets": 43716,
+      "packets_per_second": 623.1633534969209,
+      "current_mbps": 2.3270043215080634,
+      "total_bytes": 38107045,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:57"
+    },
+    {
+      "elapsed_seconds": 66,
+      "total_packets": 45706,
+      "packets_per_second": 1990.0,
+      "current_mbps": 13.827864,
+      "total_bytes": 39835528,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:58"
+    },
+    {
+      "elapsed_seconds": 67,
+      "total_packets": 46371,
+      "packets_per_second": 655.1724137840861,
+      "current_mbps": 4.228319211764465,
+      "total_bytes": 40371996,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:31:59"
+    },
+    {
+      "elapsed_seconds": 68,
+      "total_packets": 47327,
+      "packets_per_second": 873.8574039892055,
+      "current_mbps": 3.2879780620340626,
+      "total_bytes": 40821627,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:00"
+    },
+    {
+      "elapsed_seconds": 69,
+      "total_packets": 47943,
+      "packets_per_second": 555.455365224655,
+      "current_mbps": 2.269071235472925,
+      "total_bytes": 41136177,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:01"
+    },
+    {
+      "elapsed_seconds": 70,
+      "total_packets": 48689,
+      "packets_per_second": 746.0,
+      "current_mbps": 3.044712,
+      "total_bytes": 41516766,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:02"
+    },
+    {
+      "elapsed_seconds": 72,
+      "total_packets": 49397,
+      "packets_per_second": 696.8503936586285,
+      "current_mbps": 3.244566928937564,
+      "total_bytes": 41928826,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:03"
+    },
+    {
+      "elapsed_seconds": 73,
+      "total_packets": 51960,
+      "packets_per_second": 2447.946513801188,
+      "current_mbps": 17.15802865295936,
+      "total_bytes": 44174383,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:04"
+    },
+    {
+      "elapsed_seconds": 74,
+      "total_packets": 52899,
+      "packets_per_second": 939.0,
+      "current_mbps": 4.672664,
+      "total_bytes": 44758466,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:05"
+    },
+    {
+      "elapsed_seconds": 75,
+      "total_packets": 53963,
+      "packets_per_second": 1064.0,
+      "current_mbps": 4.53096,
+      "total_bytes": 45324836,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:06"
+    },
+    {
+      "elapsed_seconds": 76,
+      "total_packets": 55252,
+      "packets_per_second": 1289.0,
+      "current_mbps": 6.680144,
+      "total_bytes": 46159854,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:07"
+    },
+    {
+      "elapsed_seconds": 77,
+      "total_packets": 56501,
+      "packets_per_second": 1158.6270872205373,
+      "current_mbps": 5.706738404561156,
+      "total_bytes": 46928837,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:08"
+    },
+    {
+      "elapsed_seconds": 78,
+      "total_packets": 58823,
+      "packets_per_second": 2322.0,
+      "current_mbps": 16.382808,
+      "total_bytes": 48976688,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:09"
+    },
+    {
+      "elapsed_seconds": 79,
+      "total_packets": 61771,
+      "packets_per_second": 2815.663801282053,
+      "current_mbps": 19.49094173791848,
+      "total_bytes": 51527565,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:10"
+    },
+    {
+      "elapsed_seconds": 80,
+      "total_packets": 62951,
+      "packets_per_second": 1144.5198836536376,
+      "current_mbps": 4.2491949565219445,
+      "total_bytes": 52075180,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:11"
+    },
+    {
+      "elapsed_seconds": 81,
+      "total_packets": 64458,
+      "packets_per_second": 1507.0,
+      "current_mbps": 6.561216,
+      "total_bytes": 52895332,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:12"
+    },
+    {
+      "elapsed_seconds": 82,
+      "total_packets": 65104,
+      "packets_per_second": 646.0,
+      "current_mbps": 2.329008,
+      "total_bytes": 53186458,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:13"
+    },
+    {
+      "elapsed_seconds": 83,
+      "total_packets": 66152,
+      "packets_per_second": 1031.496063047912,
+      "current_mbps": 6.199133858602983,
+      "total_bytes": 53973748,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:14"
+    },
+    {
+      "elapsed_seconds": 84,
+      "total_packets": 66715,
+      "packets_per_second": 530.1318267247949,
+      "current_mbps": 2.5953521656408354,
+      "total_bytes": 54318281,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:15"
+    },
+    {
+      "elapsed_seconds": 85,
+      "total_packets": 68728,
+      "packets_per_second": 1629.959514188478,
+      "current_mbps": 10.759138461660166,
+      "total_bytes": 55979223,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:16"
+    },
+    {
+      "elapsed_seconds": 86,
+      "total_packets": 69488,
+      "packets_per_second": 737.1483995580908,
+      "current_mbps": 2.3492376331937734,
+      "total_bytes": 56281981,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:17"
+    },
+    {
+      "elapsed_seconds": 87,
+      "total_packets": 70913,
+      "packets_per_second": 1425.0,
+      "current_mbps": 7.491488,
+      "total_bytes": 57218417,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:18"
+    },
+    {
+      "elapsed_seconds": 88,
+      "total_packets": 71302,
+      "packets_per_second": 340.92900965708446,
+      "current_mbps": 1.7924276950907017,
+      "total_bytes": 57474062,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:20"
+    },
+    {
+      "elapsed_seconds": 89,
+      "total_packets": 71425,
+      "packets_per_second": 106.40138408681673,
+      "current_mbps": 0.220975778554546,
+      "total_bytes": 57505993,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:21"
+    },
+    {
+      "elapsed_seconds": 91,
+      "total_packets": 72715,
+      "packets_per_second": 1115.9169549444796,
+      "current_mbps": 7.877896193257539,
+      "total_bytes": 58644349,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:22"
+    },
+    {
+      "elapsed_seconds": 92,
+      "total_packets": 72786,
+      "packets_per_second": 69.88188976755893,
+      "current_mbps": 0.2388425196979566,
+      "total_bytes": 58674682,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:23"
+    },
+    {
+      "elapsed_seconds": 93,
+      "total_packets": 73072,
+      "packets_per_second": 237.73898587271077,
+      "current_mbps": 1.4549891937072414,
+      "total_bytes": 58893476,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:24"
+    },
+    {
+      "elapsed_seconds": 94,
+      "total_packets": 73300,
+      "packets_per_second": 189.5261845235407,
+      "current_mbps": 1.4086184537530146,
+      "total_bytes": 59105297,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:25"
+    },
+    {
+      "elapsed_seconds": 95,
+      "total_packets": 73385,
+      "packets_per_second": 82.44422890725356,
+      "current_mbps": 0.21135208536242564,
+      "total_bytes": 59132535,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:26"
+    },
+    {
+      "elapsed_seconds": 96,
+      "total_packets": 74550,
+      "packets_per_second": 980.6397306681749,
+      "current_mbps": 7.267306397517191,
+      "total_bytes": 60211730,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:27"
+    },
+    {
+      "elapsed_seconds": 97,
+      "total_packets": 74920,
+      "packets_per_second": 328.8888888888889,
+      "current_mbps": 2.627697777777778,
+      "total_bytes": 60581250,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:29"
+    },
+    {
+      "elapsed_seconds": 98,
+      "total_packets": 74950,
+      "packets_per_second": 28.653295128379103,
+      "current_mbps": 0.20495128939427004,
+      "total_bytes": 60608073,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:30"
+    },
+    {
+      "elapsed_seconds": 99,
+      "total_packets": 74982,
+      "packets_per_second": 31.527093595625193,
+      "current_mbps": 0.04384630541811573,
+      "total_bytes": 60613636,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:31"
+    },
+    {
+      "elapsed_seconds": 100,
+      "total_packets": 74999,
+      "packets_per_second": 16.236867239414824,
+      "current_mbps": 0.06322063037125565,
+      "total_bytes": 60621910,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:32"
+    },
+    {
+      "elapsed_seconds": 101,
+      "total_packets": 75007,
+      "packets_per_second": 7.874015748457344,
+      "current_mbps": 0.003889763779737928,
+      "total_bytes": 60622404,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:33"
+    },
+    {
+      "elapsed_seconds": 103,
+      "total_packets": 76353,
+      "packets_per_second": 1118.869492953387,
+      "current_mbps": 8.335308395819437,
+      "total_bytes": 61875826,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:34"
+    },
+    {
+      "elapsed_seconds": 104,
+      "total_packets": 76442,
+      "packets_per_second": 87.68472906283257,
+      "current_mbps": 0.6461399014689394,
+      "total_bytes": 61957805,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:35"
+    },
+    {
+      "elapsed_seconds": 105,
+      "total_packets": 76443,
+      "packets_per_second": 0.9689922480558942,
+      "current_mbps": 0.00217829457362965,
+      "total_bytes": 61958086,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:36"
+    },
+    {
+      "elapsed_seconds": 106,
+      "total_packets": 76454,
+      "packets_per_second": 10.357815442225123,
+      "current_mbps": 0.006418079095836949,
+      "total_bytes": 61958938,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:37"
+    },
+    {
+      "elapsed_seconds": 107,
+      "total_packets": 76471,
+      "packets_per_second": 16.48884578145071,
+      "current_mbps": 0.013315227934573844,
+      "total_bytes": 61960654,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:38"
+    },
+    {
+      "elapsed_seconds": 108,
+      "total_packets": 76492,
+      "packets_per_second": 20.34883720917378,
+      "current_mbps": 0.02644961240293369,
+      "total_bytes": 61964066,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:39"
+    },
+    {
+      "elapsed_seconds": 109,
+      "total_packets": 77953,
+      "packets_per_second": 1461.0,
+      "current_mbps": 10.483992,
+      "total_bytes": 63274565,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:40"
+    },
+    {
+      "elapsed_seconds": 110,
+      "total_packets": 78227,
+      "packets_per_second": 240.35087719003712,
+      "current_mbps": 1.2692912280546214,
+      "total_bytes": 63455439,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:41"
+    },
+    {
+      "elapsed_seconds": 111,
+      "total_packets": 78471,
+      "packets_per_second": 208.19112627622386,
+      "current_mbps": 0.9765733788225178,
+      "total_bytes": 63598507,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:42"
+    },
+    {
+      "elapsed_seconds": 112,
+      "total_packets": 78630,
+      "packets_per_second": 139.35144610662323,
+      "current_mbps": 0.23392813322774225,
+      "total_bytes": 63631871,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:44"
+    },
+    {
+      "elapsed_seconds": 113,
+      "total_packets": 78795,
+      "packets_per_second": 162.56157635244242,
+      "current_mbps": 0.2745379310307042,
+      "total_bytes": 63666703,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:45"
+    },
+    {
+      "elapsed_seconds": 114,
+      "total_packets": 82067,
+      "packets_per_second": 3272.0,
+      "current_mbps": 26.701136,
+      "total_bytes": 67004345,
+      "peak_mbps": 35.95656441890951,
+      "timestamp": "2026-08-22T03:32:46"
+    },
+    {
+      "elapsed_seconds": 115,
+      "total_packets": 86778,
+      "packets_per_second": 4711.0,
+      "current_mbps": 50.225504,
+      "total_bytes": 73282533,
+      "peak_mbps": 50.225504,
+      "timestamp": "2026-08-22T03:32:47"
+    },
+    {
+      "elapsed_seconds": 116,
+      "total_packets": 91527,
+      "packets_per_second": 4749.0,
+      "current_mbps": 50.793608,
+      "total_bytes": 79631734,
+      "peak_mbps": 50.793608,
+      "timestamp": "2026-08-22T03:32:48"
+    },
+    {
+      "elapsed_seconds": 117,
+      "total_packets": 96352,
+      "packets_per_second": 4825.0,
+      "current_mbps": 50.286056,
+      "total_bytes": 85917491,
+      "peak_mbps": 50.793608,
+      "timestamp": "2026-08-22T03:32:49"
+    },
+    {
+      "elapsed_seconds": 118,
+      "total_packets": 101302,
+      "packets_per_second": 4950.0,
+      "current_mbps": 50.631952,
+      "total_bytes": 92246485,
+      "peak_mbps": 50.793608,
+      "timestamp": "2026-08-22T03:32:50"
+    },
+    {
+      "elapsed_seconds": 119,
+      "total_packets": 101812,
+      "packets_per_second": 501.9685039066391,
+      "current_mbps": 3.8030629918959016,
+      "total_bytes": 92729474,
+      "peak_mbps": 50.793608,
+      "timestamp": "2026-08-22T03:32:51"
+    }
+  ]
+}

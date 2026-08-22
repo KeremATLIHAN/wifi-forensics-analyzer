@@ -27,6 +27,18 @@ class ContextualAnomalyResult:
     reason: str
 
 
+@dataclass
+class CollectiveAnomalyResult:
+    is_anomaly: bool
+    value: float
+    short_mean: float
+    long_mean: float
+    difference: float
+    consecutive_count: int
+    severity: str
+    reason: str
+
+
 class PointAnomalyDetector:
     """
     Canlı trafik için basit Z-score tabanlı nokta anomali dedektörü.
@@ -189,6 +201,102 @@ class ContextualAnomalyDetector:
             local_mean=local_mean,
             local_std=local_std,
             z_score=z_score,
+            severity=severity,
+            reason=reason,
+        )
+
+
+class CollectiveAnomalyDetector:
+    """Uzun süreli trafik sapmalarını kısa ve uzun pencerelerle izler."""
+
+    def __init__(
+        self,
+        short_window: int = 15,
+        long_window: int = 60,
+        min_difference_mbps: float = 1.0,
+        min_ratio: float = 1.25,
+        min_consecutive: int = 5,
+    ) -> None:
+        self.short_window = short_window
+        self.long_window = long_window
+        self.min_difference_mbps = min_difference_mbps
+        self.min_ratio = min_ratio
+        self.min_consecutive = min_consecutive
+        self.consecutive_count = 0
+        self.values: deque[float] = deque(maxlen=long_window)
+
+    def reset(self) -> None:
+        self.values.clear()
+        self.consecutive_count = 0
+
+    def add_sample(
+        self,
+        value: float,
+    ) -> CollectiveAnomalyResult:
+        value = max(0.0, float(value))
+        self.values.append(value)
+
+        if len(self.values) < self.long_window:
+            return CollectiveAnomalyResult(
+                is_anomaly=False,
+                value=value,
+                short_mean=0.0,
+                long_mean=0.0,
+                difference=0.0,
+                consecutive_count=0,
+                severity="info",
+                reason="Collective baseline hazırlanıyor.",
+            )
+
+        values = list(self.values)
+        short_values = values[-self.short_window:]
+        short_mean = mean(short_values)
+        long_mean = mean(values)
+        difference = short_mean - long_mean
+        ratio = (
+            short_mean / long_mean
+            if long_mean > 0
+            else 0.0
+        )
+
+        sustained_deviation = (
+            difference >= self.min_difference_mbps
+            and ratio >= self.min_ratio
+        )
+
+        if sustained_deviation:
+            self.consecutive_count += 1
+        else:
+            self.consecutive_count = 0
+
+        is_anomaly = (
+            self.consecutive_count >= self.min_consecutive
+        )
+
+        if is_anomaly:
+            severity = (
+                "warning"
+                if ratio < 2.5
+                else "critical"
+            )
+            reason = (
+                "Trafik seviyesi uzun süre baseline "
+                "üzerinde seyrediyor."
+            )
+        else:
+            severity = "info"
+            reason = (
+                "Sürekli anormal trafik paterni "
+                "henüz oluşmadı."
+            )
+
+        return CollectiveAnomalyResult(
+            is_anomaly=is_anomaly,
+            value=value,
+            short_mean=short_mean,
+            long_mean=long_mean,
+            difference=difference,
+            consecutive_count=self.consecutive_count,
             severity=severity,
             reason=reason,
         )
