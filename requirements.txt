@@ -3,3 +3,4 @@ PySide6_Addons==6.11.1
 PySide6_Essentials==6.11.1
 shiboken6==6.11.1
 reportlab>=4.0,<5
+pandas>=2.2,<4
