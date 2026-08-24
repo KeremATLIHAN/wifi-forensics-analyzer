@@ -27,6 +27,14 @@ Thumbs.db
 *.log
 *.tmp
 
+# ML datasets and models
+ml/datasets/*
+!ml/datasets/.gitkeep
+ml/models/*.joblib
+ml/models/*.pkl
+
+CyberLab-v*-Windows-x64.zip
+
 # IDE / OS
 .vscode/
 .idea/
