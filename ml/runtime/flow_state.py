@@ -150,6 +150,19 @@ class FlowState:
         self.forward_source_port = (
             first_packet.src_port
         )
+        self.forward_destination_ip = (
+            first_packet.dst_ip
+        )
+        self.forward_destination_port = (
+            first_packet.dst_port
+        )
+
+        self.fwd_initial_window: int | None = None
+        self.bwd_initial_window: int | None = None
+
+        self.fwd_active_data_packets = 0
+
+        self.fwd_segment_size_min: int | None = None
 
         self.fwd = DirectionStats()
         self.bwd = DirectionStats()
@@ -213,8 +226,45 @@ class FlowState:
 
         if self._is_forward(packet):
             self.fwd.add_packet(packet)
+
+            if (
+                packet.is_tcp
+                and self.fwd_initial_window is None
+            ):
+                self.fwd_initial_window = (
+                    packet.tcp_window_size
+                )
+
+            if (
+                packet.is_tcp
+                and packet.tcp_payload_length > 0
+            ):
+                self.fwd_active_data_packets += 1
+
+            if packet.is_tcp:
+                segment_size = (
+                    packet.tcp_payload_length
+                )
+
+                if (
+                    self.fwd_segment_size_min is None
+                    or segment_size
+                    < self.fwd_segment_size_min
+                ):
+                    self.fwd_segment_size_min = (
+                        segment_size
+                    )
+
         else:
             self.bwd.add_packet(packet)
+
+            if (
+                packet.is_tcp
+                and self.bwd_initial_window is None
+            ):
+                self.bwd_initial_window = (
+                    packet.tcp_window_size
+                )
 
     @property
     def flow_duration_seconds(self) -> float:
@@ -270,6 +320,12 @@ class FlowState:
         )
 
         return {
+            "Src Port":
+                self.forward_source_port,
+
+            "Dst Port":
+                self.forward_destination_port,
+
             "Flow Duration":
                 self.flow_duration_microseconds,
 
@@ -309,6 +365,20 @@ class FlowState:
             "Bwd Packet Length Std":
                 self.bwd.packet_lengths.std,
 
+            "Fwd Segment Size Avg":
+                self.fwd.packet_lengths.mean,
+
+            "Bwd Segment Size Avg":
+                self.bwd.packet_lengths.mean,
+
+            "Down/Up Ratio":
+                (
+                    self.bwd.packets
+                    // self.fwd.packets
+                    if self.fwd.packets > 0
+                    else 0
+                ),
+
             "Flow Bytes/s":
                 flow_bytes_per_sec,
 
@@ -320,6 +390,42 @@ class FlowState:
 
             "Bwd Packets/s":
                 bwd_packets_per_sec,
+
+            "Fwd Header Length":
+                self.fwd.header_length_total,
+
+            "Bwd Header Length":
+                self.bwd.header_length_total,
+
+            "Fwd PSH Flags":
+                self.fwd.psh_count,
+
+            "Fwd URG Flags":
+                self.fwd.urg_count,
+
+            "FWD Init Win Bytes":
+                (
+                    self.fwd_initial_window
+                    if self.fwd_initial_window is not None
+                    else 0
+                ),
+
+            "Bwd Init Win Bytes":
+                (
+                    self.bwd_initial_window
+                    if self.bwd_initial_window is not None
+                    else 0
+                ),
+
+            "Fwd Act Data Pkts":
+                self.fwd_active_data_packets,
+
+            "Fwd Seg Size Min":
+                (
+                    self.fwd_segment_size_min
+                    if self.fwd_segment_size_min is not None
+                    else 0
+                ),
 
             "Packet Length Min":
                 self.all_packet_lengths.min_value,

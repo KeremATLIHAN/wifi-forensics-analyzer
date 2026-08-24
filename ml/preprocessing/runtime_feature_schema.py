@@ -4,6 +4,10 @@ from ml.preprocessing.feature_schema import MODEL_FEATURES
 
 
 DEFERRED_RUNTIME_FEATURES = {
+    # Average Packet Size requires exact
+    # CICFlowMeter packet-length parity validation.
+    "Average Packet Size",
+
     # Bulk semantics require CICFlowMeter parity validation.
     "Bwd Bytes/Bulk Avg",
     "Bwd Packet/Bulk Avg",
@@ -47,9 +51,9 @@ def validate_runtime_schema() -> None:
             + ", ".join(sorted(unknown))
         )
 
-    if len(RUNTIME_MODEL_FEATURES) != 58:
+    if len(RUNTIME_MODEL_FEATURES) != 57:
         raise ValueError(
-            "Runtime schema 58 feature bekliyor, "
+            "Runtime schema 57 feature bekliyor, "
             f"ancak {len(RUNTIME_MODEL_FEATURES)} bulundu."
         )
 
