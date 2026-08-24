@@ -599,7 +599,28 @@ def inspect_feature_variability(
     print(f"ROWS CHECKED: {total_rows:,}")
     print("=" * 70)
 
+from ml.preprocessing.feature_schema import (
+    schema_summary,
+    validate_schema,
+)
+
+
 if __name__ == "__main__":
-    inspect_feature_variability()
+    csv_files = sorted(
+        DATASET_ROOT.rglob("*.csv")
+    )
+
+    sample = pd.read_csv(
+        csv_files[0],
+        nrows=0,
+    )
+
+    validate_schema(
+        list(sample.columns)
+    )
+
+    schema_summary()
+
+    print("\nSchema validation: OK")
 
 
