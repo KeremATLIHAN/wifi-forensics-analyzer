@@ -48,3 +48,6 @@ Thumbs.db
 # Temporary / logs
 *.log
 *.tmp
+
+# Generated ML datasets
+ml/datasets/processed/
