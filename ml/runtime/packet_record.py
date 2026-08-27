@@ -49,6 +49,26 @@ class PacketRecord:
     def is_udp(self) -> bool:
         return self.transport == "UDP"
 
+    @property
+    def payload_length(self) -> int:
+        """
+        CICFlowMeter-compatible transport payload length.
+
+        TCP:
+            TShark tcp.len doğrudan TCP payload uzunluğudur.
+
+        UDP:
+            TShark udp.length, 8-byte UDP header dahil
+            toplam UDP datagram uzunluğudur.
+        """
+        if self.is_tcp:
+            return self.tcp_payload_length
+
+        if self.is_udp:
+            return max(self.udp_length - 8, 0)
+
+        return 0
+
     def validate(self) -> None:
         if self.timestamp < 0:
             raise ValueError(

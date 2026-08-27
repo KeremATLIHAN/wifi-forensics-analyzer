@@ -88,10 +88,10 @@ class DirectionStats:
         packet: PacketRecord,
     ) -> None:
         self.packets += 1
-        self.bytes += packet.frame_length
+        self.bytes += packet.payload_length
 
         self.packet_lengths.add(
-            float(packet.frame_length)
+            float(packet.payload_length)
         )
 
         if self.last_timestamp is not None:
@@ -173,7 +173,7 @@ class FlowState:
         # The first forward packet contributes an additional
         # observation to global packet-length statistics.
         self.all_packet_lengths.add(
-            float(first_packet.frame_length)
+            float(first_packet.payload_length)
         )
 
         self.flow_iat = RunningStats()
@@ -229,7 +229,7 @@ class FlowState:
         )
 
         self.all_packet_lengths.add(
-            float(packet.frame_length)
+            float(packet.payload_length)
         )
 
         if self._is_forward(packet):
