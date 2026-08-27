@@ -168,6 +168,14 @@ class FlowState:
         self.bwd = DirectionStats()
 
         self.all_packet_lengths = RunningStats()
+
+        # CICFlowMeter parity:
+        # The first forward packet contributes an additional
+        # observation to global packet-length statistics.
+        self.all_packet_lengths.add(
+            float(first_packet.frame_length)
+        )
+
         self.flow_iat = RunningStats()
 
         self.last_flow_packet_timestamp: (
@@ -243,7 +251,7 @@ class FlowState:
 
             if packet.is_tcp:
                 segment_size = (
-                    packet.tcp_payload_length
+                    packet.tcp_header_length
                 )
 
                 if (

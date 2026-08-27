@@ -11,6 +11,12 @@ DATASET_ROOT = Path(
 )
 
 COLUMNS = [
+    "Fwd Packet Length Min",
+    "Fwd Packet Length Max",
+    "Bwd Packet Length Min",
+    "Bwd Packet Length Max",
+    "Packet Length Min",
+    "Packet Length Max",
     "Total Fwd Packet",
     "Total Bwd packets",
     "Total Length of Fwd Packet",
@@ -281,6 +287,322 @@ def main() -> None:
             index=False
         )
     )
+
+    print()
+    print("-" * 70)
+    print("GLOBAL PACKET POPULATION PARITY")
+    print("-" * 70)
+
+    total_packets = (
+        df["Total Fwd Packet"].astype(float)
+        + df["Total Bwd packets"].astype(float)
+    )
+
+    valid = total_packets > 0
+
+    actual_packet_mean = (
+        df.loc[
+            valid,
+            "Packet Length Mean",
+        ].astype(float)
+    )
+
+    average_packet_size = (
+        df.loc[
+            valid,
+            "Average Packet Size",
+        ].astype(float)
+    )
+
+    packet_count = total_packets[valid]
+
+    # Hypothesis:
+    # CIC global packet-length statistics use N+1 observations,
+    # while Average Packet Size divides the same accumulated
+    # packet-length sum by N.
+    expected_packet_mean = (
+        average_packet_size
+        * packet_count
+        / (packet_count + 1.0)
+    )
+
+    error_summary(
+        "Packet Length Mean vs "
+        "Average Packet Size * N / (N+1)",
+        actual_packet_mean,
+        expected_packet_mean,
+    )
+
+    implied_packet_sum = (
+        average_packet_size
+        * packet_count
+    )
+
+    directional_total = (
+        df.loc[
+            valid,
+            "Total Length of Fwd Packet",
+        ].astype(float)
+        + df.loc[
+            valid,
+            "Total Length of Bwd Packet",
+        ].astype(float)
+    )
+
+    implied_extra = (
+        implied_packet_sum
+        - directional_total
+    )
+
+    print()
+    print("IMPLIED EXTRA PACKET-LENGTH OBSERVATION")
+    print("-" * 70)
+
+    print(
+        implied_extra.describe(
+            percentiles=[
+                0.10,
+                0.25,
+                0.50,
+                0.75,
+                0.90,
+                0.99,
+            ]
+        ).to_string()
+    )
+
+    print()
+    print("Most common implied extra values:")
+
+    print(
+        implied_extra
+        .round(6)
+        .value_counts()
+        .head(20)
+        .to_string()
+    )
+
+    print()
+    print("-" * 70)
+    print("IMPLIED EXTRA VALUE MATCH AUDIT")
+    print("-" * 70)
+
+    candidates = {
+        "Packet Length Min":
+            df.loc[valid, "Packet Length Min"].astype(float),
+
+        "Packet Length Max":
+            df.loc[valid, "Packet Length Max"].astype(float),
+
+        "Fwd Packet Length Min":
+            df.loc[valid, "Fwd Packet Length Min"].astype(float),
+
+        "Fwd Packet Length Max":
+            df.loc[valid, "Fwd Packet Length Max"].astype(float),
+
+        "Bwd Packet Length Min":
+            df.loc[valid, "Bwd Packet Length Min"].astype(float),
+
+        "Bwd Packet Length Max":
+            df.loc[valid, "Bwd Packet Length Max"].astype(float),
+    }
+
+    for name, candidate in candidates.items():
+
+        matches = np.isclose(
+            implied_extra,
+            candidate,
+        )
+
+        print(
+            f"{name:<28} "
+            f"{matches.mean() * 100:>8.4f}%"
+        )
+
+    print()
+    print("-" * 70)
+    print("DIRECTIONAL VS GLOBAL LENGTH SUM AUDIT")
+    print("-" * 70)
+
+    fwd_count = (
+        df.loc[
+            valid,
+            "Total Fwd Packet",
+        ].astype(float)
+    )
+
+    bwd_count = (
+        df.loc[
+            valid,
+            "Total Bwd packets",
+        ].astype(float)
+    )
+
+    fwd_mean = (
+        df.loc[
+            valid,
+            "Fwd Packet Length Mean",
+        ].astype(float)
+    )
+
+    bwd_mean = (
+        df.loc[
+            valid,
+            "Bwd Packet Length Mean",
+        ].astype(float)
+    )
+
+    directional_implied_sum = (
+        fwd_mean * fwd_count
+        + bwd_mean * bwd_count
+    )
+
+    global_implied_sum = (
+        df.loc[
+            valid,
+            "Average Packet Size",
+        ].astype(float)
+        * (
+            fwd_count
+            + bwd_count
+        )
+    )
+
+    sum_delta = (
+        global_implied_sum
+        - directional_implied_sum
+    )
+
+    print()
+    print(
+        "Global implied sum vs "
+        "directional implied sum"
+    )
+
+    print(
+        sum_delta.describe(
+            percentiles=[
+                0.10,
+                0.25,
+                0.50,
+                0.75,
+                0.90,
+                0.99,
+            ]
+        ).to_string()
+    )
+
+    print()
+    print("Most common deltas:")
+
+    print(
+        sum_delta
+        .round(6)
+        .value_counts()
+        .head(20)
+        .to_string()
+    )
+
+    print()
+    print(
+        "Exact zero delta: "
+        f"{np.isclose(sum_delta, 0).mean() * 100:.4f}%"
+    )
+
+    print()
+    print(
+        "Delta equals implied_extra: "
+        f"{np.isclose(sum_delta, implied_extra).mean() * 100:.4f}%"
+    )
+
+    print()
+    print("-" * 70)
+    print("FIRST-PACKET HYPOTHESIS AUDIT")
+    print("-" * 70)
+
+    first_packet_candidates = {
+        "Fwd Packet Length Min":
+            df.loc[
+                valid,
+                "Fwd Packet Length Min",
+            ].astype(float),
+
+        "Fwd Packet Length Max":
+            df.loc[
+                valid,
+                "Fwd Packet Length Max",
+            ].astype(float),
+
+        "Fwd Packet Length Mean":
+            df.loc[
+                valid,
+                "Fwd Packet Length Mean",
+            ].astype(float),
+    }
+
+    fwd_single_packet = (
+        df.loc[
+            valid,
+            "Total Fwd Packet",
+        ].astype(float)
+        == 1
+    )
+
+    print(
+        f"Rows with exactly one FWD packet: "
+        f"{int(fwd_single_packet.sum()):,}"
+    )
+
+    if fwd_single_packet.any():
+
+        single_extra = (
+            implied_extra[
+                fwd_single_packet
+            ]
+        )
+
+        single_fwd_mean = (
+            df.loc[
+                valid,
+                "Fwd Packet Length Mean",
+            ]
+            .astype(float)[
+                fwd_single_packet
+            ]
+        )
+
+        matches = np.isclose(
+            single_extra,
+            single_fwd_mean,
+        )
+
+        print(
+            "Implied extra == only FWD packet length: "
+            f"{matches.mean() * 100:.4f}%"
+        )
+
+        error_summary(
+            "Implied extra vs only FWD packet length",
+            single_extra,
+            single_fwd_mean,
+        )
+
+    print()
+    print("All-row candidate matching:")
+
+    for name, candidate in (
+        first_packet_candidates.items()
+    ):
+
+        matches = np.isclose(
+            implied_extra,
+            candidate,
+        )
+
+        print(
+            f"{name:<28} "
+            f"{matches.mean() * 100:>8.4f}%"
+        )
 
     print()
     print("-" * 70)
