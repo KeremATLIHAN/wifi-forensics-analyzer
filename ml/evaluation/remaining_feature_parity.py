@@ -587,6 +587,43 @@ def main() -> None:
             single_fwd_mean,
         )
 
+        print()
+        print(
+            "Most common implied first-packet lengths "
+            "(single-FWD flows):"
+        )
+
+        first_length_counts = (
+            single_extra
+            .round(6)
+            .value_counts()
+            .head(30)
+        )
+
+        for value, count in first_length_counts.items():
+            print(
+                f"  {value:>10.3f} : "
+                f"{count:>6,}"
+            )
+
+        print()
+        print(
+            "Single-FWD first-packet length summary:"
+        )
+        print(
+            single_extra.describe(
+                percentiles=[
+                    0.10,
+                    0.25,
+                    0.50,
+                    0.75,
+                    0.90,
+                    0.95,
+                    0.99,
+                ]
+            )
+        )
+
     print()
     print("All-row candidate matching:")
 
