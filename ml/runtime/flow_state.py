@@ -34,13 +34,13 @@ class RunningStats:
 
     @property
     def variance(self) -> float:
-        if self.count == 0:
+        if self.count <= 1:
             return 0.0
 
         value = (
-            self.total_sq / self.count
-            - self.mean * self.mean
-        )
+            self.total_sq
+            - (self.total * self.total) / self.count
+        ) / (self.count - 1)
 
         return max(0.0, value)
 
