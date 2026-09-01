@@ -77,7 +77,119 @@ def main() -> None:
     assert packet_count == 618
     assert transport_counts["TCP"] == 235
     assert transport_counts["UDP"] == 383
-    assert len(completed_flows) == 17
+    assert len(completed_flows) == 23
+
+    completion_reason_counts = Counter(
+        flow.reason
+        for flow in completed_flows
+    )
+
+    assert completion_reason_counts == {
+        "TCP_FIN": 5,
+        "TCP_RST": 1,
+        "END_OF_CAPTURE": 17,
+    }
+    assert completion_reason_counts["FLOW_TIMEOUT"] == 0
+
+    flow_55222 = [
+        flow
+        for flow in completed_flows
+        if flow.key.protocol == 6
+        and {
+            flow.key.endpoint_a.ip,
+            flow.key.endpoint_b.ip,
+        }
+        == {
+            "140.82.121.5",
+            "172.20.10.9",
+        }
+        and {
+            flow.key.endpoint_a.port,
+            flow.key.endpoint_b.port,
+        }
+        == {443, 55222}
+    ]
+
+    assert len(flow_55222) == 3
+
+    flow_55222_by_reason = {
+        flow.reason: flow
+        for flow in flow_55222
+    }
+
+    assert set(flow_55222_by_reason) == {
+        "TCP_FIN",
+        "TCP_RST",
+        "END_OF_CAPTURE",
+    }
+
+    expected_55222 = {
+        "TCP_FIN": (1, 1, 495),
+        "TCP_RST": (1, 1, 208),
+        "END_OF_CAPTURE": (2, 0, 424854),
+    }
+
+    for reason, expected in expected_55222.items():
+        features = flow_55222_by_reason[reason].features
+        actual = (
+            int(features["Total Fwd Packet"]),
+            int(features["Total Bwd packets"]),
+            round(features["Flow Duration"]),
+        )
+        assert actual == expected
+
+    continuation_endpoints = {
+        55224: {
+            "104.18.32.47",
+            "172.20.10.9",
+        },
+        53019: {
+            "172.20.10.9",
+            "52.123.244.40",
+        },
+        54099: {
+            "172.20.10.9",
+            "4.207.44.71",
+        },
+        54102: {
+            "172.20.10.9",
+            "20.184.175.16",
+        },
+    }
+
+    for client_port, endpoint_ips in (
+        continuation_endpoints.items()
+    ):
+        matches = [
+            flow
+            for flow in completed_flows
+            if flow.key.protocol == 6
+            and flow.reason == "END_OF_CAPTURE"
+            and {
+                flow.key.endpoint_a.ip,
+                flow.key.endpoint_b.ip,
+            }
+            == endpoint_ips
+            and {
+                flow.key.endpoint_a.port,
+                flow.key.endpoint_b.port,
+            }
+            == {443, client_port}
+        ]
+
+        assert len(matches) == 1
+
+        features = matches[0].features
+        fwd_packets = int(
+            features["Total Fwd Packet"]
+        )
+        bwd_packets = int(
+            features["Total Bwd packets"]
+        )
+
+        assert fwd_packets == 1
+        assert bwd_packets == 0
+        assert fwd_packets + bwd_packets == 1
 
     # --------------------------------------------------------------
     # FLOW -> FEATURES -> IDS
