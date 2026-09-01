@@ -113,6 +113,110 @@ PDF reports are generated using ReportLab and include:
 
 ---
 
+## ML / IDS Development Milestone
+
+CyberLab now includes a validated machine-learning and runtime flow-processing foundation for hierarchical intrusion detection.
+
+### Dataset and Feature Pipeline
+
+- CIC-BCCC-NRC-ACI-IoT-2023 dataset integrated into the project
+- 57 dataset features aligned with runtime PCAP / flow features
+- Runtime feature parity validated
+- Eight normalized traffic and attack families:
+  - BENIGN
+  - BRUTE_FORCE
+  - DDOS
+  - DOS
+  - MIRAI
+  - MITM
+  - MQTT
+  - RECON
+- Balanced corpus containing 200,000 flows:
+  - 100,000 benign
+  - 100,000 attack
+- Dataset split:
+  - 140,000 training flows
+  - 30,000 validation flows
+  - 30,000 final-test flows
+
+> The final 30,000-flow test set has not been used. Final model performance has not yet been reported.
+
+### Binary IDS Validation
+
+The binary Random Forest IDS currently has the following **validation** results:
+
+- Accuracy: approximately 96.08%
+- Precision: approximately 99.17%
+- Attack recall: approximately 92.94%
+- ROC-AUC: approximately 0.990
+
+BRUTE_FORCE and MITM were identified as the more difficult attack families.
+
+### Hierarchical IDS Validation
+
+A hierarchical architecture combining a Primary Random Forest with a Hard-Case Specialist has been developed.
+
+- Specialist corpus: 24,709 hard-case samples selected through five-fold out-of-fold prediction
+- False negatives: 1,059 to 806
+- BRUTE_FORCE detection: 61.41% to 67.63%
+- MITM detection: 69.16% to 76.14%
+- False positives: 117 to 228
+
+These are **validation results**, not final-test results.
+
+### CICFlowMeter Lifecycle Parity
+
+Controlled PCAP tests against the CICFlowMeter reference implementation validate:
+
+- Normal TCP lifecycle
+- TCP FIN lifecycle
+- TCP RST lifecycle
+- Flow lifetimes below 120 seconds
+- Flow lifetimes above 120 seconds
+- Exact 120-second boundary behavior
+- 120 seconds plus 1 microsecond boundary behavior
+- Lifecycle-aware regression behavior
+
+Maximum flow lifetime is 120 seconds and uses strict `>` semantics. A packet at exactly 120 seconds remains in the current flow; a packet beyond the boundary starts a new flow after the previous flow is completed.
+
+Verified regression status:
+
+- TEST-01 through TEST-08: PASS
+- 55222 lifecycle parity: PASS
+- 52658 legacy parser parity: PASS
+- Full Python test suite: 10 / 10 PASS
+
+The production parser preserves TShark's normal TCP decoding. The separately selected legacy profile reproduces the relevant JNetPcap compatibility behavior: the 52658 flow changes from 18 FWD / 33 BWD in production to 14 FWD / 33 BWD in legacy mode, with the remaining four packets represented as a protocol-0 flow. Internal lifecycle flow counts and CICFlowMeter CSV-equivalent counts are treated as separate concepts.
+
+### Current IDS Architecture
+
+The validated runtime path is:
+
+```text
+PCAP
+  -> TShark packet parsing
+  -> bidirectional flow tracking
+  -> 57-feature runtime vector
+  -> Primary IDS
+  -> Hard-Case Specialist
+```
+
+Packet parsing compatibility, FIN/RST lifecycle handling, maximum flow lifetime behavior, flow feature generation, model artifact validation, and hierarchical inference have dedicated regression coverage.
+
+### Next Steps
+
+1. Freeze hierarchical inference configuration
+2. Freeze the feature / model contract
+3. Complete the runtime integration: PCAP -> flow -> 57 features -> Primary IDS -> Specialist
+4. Open the 30,000-flow final-test set once for final evaluation
+5. Build the IDS alerting and reporting system
+6. Integrate IDS results with the GUI and anomaly-monitoring workflow
+7. Add live-traffic integration
+
+The final test set must remain unopened until configuration and contracts are frozen.
+
+---
+
 ## Desktop Interface
 
 CyberLab uses PySide6 / Qt for its desktop interface.
@@ -272,6 +376,10 @@ wifi-forensics-analyzer/
 │
 ├── captures/
 ├── reports/
+├── ml/
+│   ├── preprocessing/
+│   ├── runtime/
+│   └── models/
 │
 ├── gui_app.py
 ├── main.py
@@ -326,9 +434,14 @@ Users are responsible for ensuring that capture files and network analysis activ
 - TShark
 - ReportLab
 - PyInstaller
+- pandas
+- scikit-learn
+- joblib
 
 ---
 
 ## Status
 
-**CyberLab v1.0.0 — Stable**
+**CyberLab v1.0.0 — Stable Wi-Fi Forensics Suite / ML-IDS Validation Milestone**
+
+The Wi-Fi forensics application is stable. The ML/IDS runtime, lifecycle parity, feature contract, and hierarchical inference foundation are validated. Final performance remains pending because the reserved 30,000-flow final-test set has not been used.
