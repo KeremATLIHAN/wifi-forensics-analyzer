@@ -14,6 +14,7 @@ from ml.runtime.ids_inference_contract import (
     ROUTING_FLOOR,
     SPECIALIST_MODEL_PATH,
     SPECIALIST_THRESHOLD,
+    MINIMUM_TOTAL_PACKET_COUNT,
     validate_inference_contract,
 )
 
@@ -175,11 +176,19 @@ class HierarchicalIDSEngine:
     def predict(
         self,
         feature_values: Mapping[str, float],
-    ) -> IDSDecision:
+    ) -> IDSDecision | None:
 
         X = self._prepare_input(
             feature_values
         )
+
+        total_packet_count = (
+            int(feature_values["Total Fwd Packet"])
+            + int(feature_values["Total Bwd packets"])
+        )
+
+        if total_packet_count < MINIMUM_TOTAL_PACKET_COUNT:
+            return None
 
         primary_probability = (
             self._attack_probability(

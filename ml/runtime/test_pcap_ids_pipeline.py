@@ -196,6 +196,8 @@ def main() -> None:
     # --------------------------------------------------------------
 
     decisions = []
+    skipped = []
+    valid_feature_vectors = 0
 
     decision_path_counts = Counter()
     prediction_counts = Counter()
@@ -242,9 +244,15 @@ def main() -> None:
                     f"{feature}={value}"
                 )
 
+        valid_feature_vectors += 1
+
         decision = engine.predict(
             features
         )
+
+        if decision is None:
+            skipped.append(flow)
+            continue
 
         decisions.append(
             (flow, decision)
@@ -258,7 +266,10 @@ def main() -> None:
             decision.label
         ] += 1
 
-    assert len(decisions) == len(
+    assert len(decisions) == 19
+    assert len(skipped) == 4
+    assert valid_feature_vectors == 23
+    assert len(decisions) + len(skipped) == len(
         completed_flows
     )
 
@@ -298,12 +309,17 @@ def main() -> None:
 
     print(
         f"Valid feature vectors: "
-        f"{len(decisions):,}"
+        f"{valid_feature_vectors:,}"
     )
 
     print(
         f"IDS decisions:         "
         f"{len(decisions):,}"
+    )
+
+    print(
+        f"Inference skipped:      "
+        f"{len(skipped):,}"
     )
 
     if (

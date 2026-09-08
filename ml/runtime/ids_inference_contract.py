@@ -11,6 +11,9 @@ from ml.preprocessing.training_dataset import FEATURE_COLUMNS
 
 CONTRACT_VERSION = "1.0"
 
+# Flows with fewer than two packets are outside the training population.
+MINIMUM_TOTAL_PACKET_COUNT = 2
+
 MODEL_DIR = Path("ml/models")
 
 PRIMARY_MODEL_PATH = (
@@ -95,6 +98,11 @@ def contract_summary() -> None:
 
     print(f"Contract version:      {CONTRACT_VERSION}")
     print(f"Feature count:         {len(INFERENCE_FEATURES)}")
+    print(
+        "Minimum total packets: "
+        f"{MINIMUM_TOTAL_PACKET_COUNT} "
+        "(lower counts are skipped)"
+    )
 
     print()
     print("Primary model:")
