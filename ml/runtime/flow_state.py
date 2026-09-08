@@ -100,8 +100,7 @@ class DirectionStats:
                 - self.last_timestamp
             ) * 1_000_000.0
 
-            if delta >= 0:
-                self.iat.add(delta)
+            self.iat.add(delta)
 
         self.last_timestamp = packet.timestamp
 
@@ -210,14 +209,15 @@ class FlowState:
                 "Packet bu FlowState'e ait değil."
             )
 
+        is_first_packet = self.last_flow_packet_timestamp is None
+
         if self.last_flow_packet_timestamp is not None:
             delta = (
                 packet.timestamp
                 - self.last_flow_packet_timestamp
             ) * 1_000_000.0
 
-            if delta >= 0:
-                self.flow_iat.add(delta)
+            self.flow_iat.add(delta)
 
         self.last_flow_packet_timestamp = (
             packet.timestamp
@@ -244,7 +244,8 @@ class FlowState:
                 )
 
             if (
-                packet.is_tcp
+                not is_first_packet
+                and packet.is_tcp
                 and packet.tcp_payload_length > 0
             ):
                 self.fwd_active_data_packets += 1
@@ -276,11 +277,11 @@ class FlowState:
 
     @property
     def flow_duration_seconds(self) -> float:
-        return max(
-            0.0,
-            self.last_timestamp
-            - self.first_timestamp,
-        )
+        # Feature time follows arrival order; last_timestamp remains
+        # the maximum timestamp used by lifecycle inactivity checks.
+        if self.last_flow_packet_timestamp is None:
+            return 0.0
+        return self.last_flow_packet_timestamp - self.first_timestamp
 
     @property
     def flow_duration_microseconds(self) -> float:
