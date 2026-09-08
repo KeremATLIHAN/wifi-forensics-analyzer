@@ -139,7 +139,38 @@ CyberLab now includes a validated machine-learning and runtime flow-processing f
   - 30,000 validation flows
   - 30,000 final-test flows
 
-> The final 30,000-flow test set has not been used. Final model performance has not yet been reported.
+### Final 30K IDS Evaluation
+
+The read-only final evaluation used `ml/datasets/processed/binary_v1/test.parquet` with 30,000 rows. Existing model artifacts were used without retraining, normalization, imputation, or dataset modification.
+
+- Valid feature vectors: 30,000
+- IDS decisions: 30,000
+- Skipped: 0
+
+Overall performance:
+
+- Accuracy: 96.6767%
+- Precision: 98.4365%
+- Recall: 94.8600%
+- F1: 96.6152%
+
+Population results:
+
+- Normal duration: 29,893 rows; accuracy 96.6815%; F1 96.6148%
+- Zero duration: 107 rows; accuracy 95.3271%; F1 96.6887%
+- Zero-byte zero-duration: 68 rows; accuracy 98.5294%; F1 99.1304%
+- Zero-duration with total bytes greater than zero: 39 rows; accuracy 89.7436%; F1 88.8889%
+
+The detailed evaluation is documented in [`docs/ml/FINAL_30K_EVALUATION.md`](docs/ml/FINAL_30K_EVALUATION.md).
+
+Zero-duration population remains a known semantic/provenance limitation. The observed dataset contains `Flow Duration = 0`, `Flow Bytes/s > 0`, `Flow Packets/s > 0`, `Fwd Packets/s = 0`, and `Bwd Packets/s = 0`, while runtime behavior for `duration <= 0` sets global rates to `0.0`. Therefore:
+
+- REFERENCE/RUNTIME ZERO-DURATION PARITY: **FAIL**
+- ZERO-DURATION PROVENANCE: **UNKNOWN**
+- 68-ROW ANOMALY CAUSE: **UNKNOWN**
+- SEMANTIC CLEARANCE: **CONDITIONAL**
+
+This limitation is a semantic/provenance issue, not a model performance failure. The final performance evaluation is **COMPLETED**; semantic clearance remains **CONDITIONAL**. The 107 zero-duration rows have a numerically small aggregate effect on overall accuracy and F1, while the 39-row zero-duration population with positive total bytes has lower subset performance.
 
 ### Binary IDS Validation
 
@@ -444,4 +475,4 @@ Users are responsible for ensuring that capture files and network analysis activ
 
 **CyberLab v1.0.0 — Stable Wi-Fi Forensics Suite / ML-IDS Validation Milestone**
 
-The Wi-Fi forensics application is stable. The ML/IDS runtime, lifecycle parity, feature contract, and hierarchical inference foundation are validated. Final performance remains pending because the reserved 30,000-flow final-test set has not been used.
+The Wi-Fi forensics application is stable. The ML/IDS runtime, lifecycle parity, feature contract, hierarchical inference foundation, and read-only Final 30K performance evaluation are documented. Semantic clearance for the zero-duration population remains conditional.
